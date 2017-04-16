@@ -5,6 +5,7 @@
 #define MAXELEMENTS 30
 
 struct punkt {
+    //struktura potrzebna do stworzenia listy punktow która zostanie przerobiona na tablicę przejść lub listy przejść
     int wspX;
     int wspY;
     int odwiedzony;
