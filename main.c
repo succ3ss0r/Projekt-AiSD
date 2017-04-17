@@ -41,6 +41,7 @@ int checkIfExist(int, int, struct punkt *);
 void addPoint(struct punkt *);
 void removePoint(struct punkt *);
 int countPoints(struct punkt *);
+void algorithmGreedy(struct punkt *, struct drogi *);
 struct punkt* znajdzMniejszeX(struct punkt *, int);
 
 
@@ -59,7 +60,7 @@ void chooseAlgorithm(struct punkt *listaPunktow, struct drogi* drogiPrzejsc) {
                 case 1:
                     //liczenie drogi algorytmem zachłannym
 
-                    //algorithmGreedy(listaPunktow, drogiPrzejsc);
+                    algorithmGreedy(listaPunktow, drogiPrzejsc);
                     break;
                 case 2:
                     //liczenie najkrótszej trasy algorytmem deterministycznym
@@ -293,6 +294,23 @@ void addPoint(struct punkt *listaPunktow) {
         printf("\nDodano %d punktow.", i);
 }
 
+void algorithmGreedy(struct punkt *listaPunktow, struct drogi *drogiPrzejsc) {
+    //algorytm zachlanny
+
+    struct punkt *aktualnieOdwiedzane = listaPunktow->nastepny; //aktualnie odwiedzane miasto
+
+
+    aktualnieOdwiedzane->odwiedzony = 1; //odznaczenie ze miasto zostalo odwiedzone
+    struct punkt *nastepneOdwiedzane = listaPunktow->nastepny->nastepny; //ustawienie z poczatku na miasto znajdujace sie najblizej w liscie
+    float odlegloscOdAktualnegoMiasta = sqrt( pow(aktualnieOdwiedzane->wspX + nastepneOdwiedzane->wspX, 2) + pow(aktualnieOdwiedzane->wspY + nastepneOdwiedzane->wspY, 2) ); //obliczona pierwsza odleglosc
+
+    int iloscMiast = countPoints(listaPunktow);
+
+    for(int i = 0; i < iloscMiast; ++i) {
+        //pętla literująca tyle razy ile jest elementów w tablicy
+        printf("\nPUNKT (%d, %d)", aktualnieOdwiedzane->wspX, aktualnieOdwiedzane->wspY);
+    }
+}
 
 void removePoint(struct punkt *listaPunktow) {
     //usuwanie wskazanego punktu
@@ -337,3 +355,4 @@ int countPoints(struct punkt *listaPunktow) {
 
     return number - 1; //zwroc numer porzadkowy ostatniego elementu
 }
+
