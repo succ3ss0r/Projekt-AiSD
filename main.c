@@ -1,13 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <math.h>
 
 #define MAXELEMENTS 30
 
 /*
-    Dodać opcję przerabiającą utworzoną listę na tablicę przejść lub listę przejść
-    Dodać algorytm niezachłanny i zachłanny wyszukujący trasę
-    Dodać algorytm Dijkastry (potrzebna tablica) do wyznaczenia najkrótszej trasy przez graf
+    Dodać algorytm deterministyczny i zachłanny wyszukujący trasę
     Dodać algoorytm genetyczny
 */
 
@@ -21,29 +20,26 @@ struct punkt {
 
 void menu();
 int choose(int, int);
-int showPoints(const struct punkt *);
+int showPoints(struct punkt *);
 int checkIfExist(int, int, struct punkt *);
 void addPoint(struct punkt *);
 void removePoint(struct punkt *);
+int countPoints(struct punkt *);
 
-int countPoints(const struct punkt *listaPunktow) {
-    //wyświetlanie elementów listy zwraca numer ostatniego elementu
 
-    int number = 1; //numery porządkowe od 1
-    if(!listaPunktow->nastepny)
-        //jeżeli lista jest pusta wyświetl ostrzeżenie
-        return 0;
-
-    while(listaPunktow->nastepny) {
-        //dopkóki element listy wskazuje na następny
-
-        listaPunktow = listaPunktow->nastepny; //pierwszy element jest pusty dlatego trzeba przepiąć go teraz
-        ++number; //zwiększ numer porzadkowy
-    }
-
-    return number - 1; //zwroc numer porzadkowy ostatniego elementu
+void listAlgorithms(){
+    printf("\nDostepne algorytmy:");
+    printf("1. Algorytm zachlanny - lokalnie najkrotsza trasa");
+    printf("2. Algorytm deterministyczny - najkrotsza globalna trasa");
+    printf("3. Algorytm genetyczny");
+    printf("4. ")
 }
 
+struct punkt * greedyAlgorithm(const struct punkt *) {
+    //algorytm zachłanny, który wybierze lokalną najkrótszą drogę przejścia przez graf
+
+
+}
 
 
 int main(int argc, char **argv) {
@@ -65,22 +61,33 @@ int main(int argc, char **argv) {
             return 0;
         }
 
-        if(opcja == 1) {
-            //jeżeli opcja będzie równa 1 dodaj punkt
+        switch(opcja) {
+            case -1:
+                //jeżeli nie zostanie przypisana wartość do opcja
+                break; //wyjdź ze switch
+            case 1:
+                //jeżeli opcja będzie równa 1 dodaj punkt
 
-            addPoint(listaPunktow);
+                addPoint(listaPunktow);
+                break;
+            case 2:
+                //jeżeli opcja będzie równa 2 usuń punkt
+
+                removePoint(listaPunktow);
+                break;
+            case 3:
+                //jeżeli opcja bedzie równa 3 wyświetl wszystkie punkty
+
+                showPoints(listaPunktow);
+                break;
+            case 4:
+                //jeżeli opcja będzie rowna 4 zacznij liczyć przejście odpowiednim algorytmem
+
+                listAlgorithms();
+                break;
+            default:
+            printf("\tBlad wybory opcji z menu!");
         }
-        if(opcja == 2) {
-            //jeżeli opcja będzie równa 2 usuń punkt
-
-            removePoint(listaPunktow);
-        }
-        if(opcja == 3) {
-            //jeżeli opcja bedzie równa 3 wyświetl wszystkie punkty
-
-            showPoints(listaPunktow);
-        }
-
         printf("\n\n");
     }
 
@@ -109,14 +116,14 @@ int choose(int min, int max) {
         if(scanf("%d", &opcjaTmp) == 1 && opcjaTmp >= min && opcjaTmp <= max) {
             return opcjaTmp;
         } else {
-            printf("\n\nWybor nie jest poprawny!");
+            printf("\n\tWybor nie jest poprawny!");
             return -1;
         }
     }
 }
 
 int showPoints(const struct punkt *listaPunktow) {
-    //wyświetlanie elementów listy zwraca numer ostatniego elementu
+    //wyświetlanie elementów listy, zwraca numer porządkowy ostatniego elementu
 
     printf("\nAktualne punkty w bazie: ");
 
@@ -227,4 +234,22 @@ void removePoint(struct punkt *listaPunktow) {
     poprzedni->nastepny = listaPunktow->nastepny; //przepiecie wskaznika poprzedniego elementu, żeby wskazywał na ten sam element na ktory wskazuje jego nastepca
 
     free(listaPunktow); //zwolnienie pamieci
+}
+
+int countPoints(const struct punkt *listaPunktow) {
+    //wyświetlanie elementów listy zwraca numer ostatniego elementu
+
+    int number = 1; //numery porządkowe od 1
+    if(!listaPunktow->nastepny)
+        //jeżeli lista jest pusta wyświetl ostrzeżenie
+        return 0;
+
+    while(listaPunktow->nastepny) {
+        //dopkóki element listy wskazuje na następny
+
+        listaPunktow = listaPunktow->nastepny; //pierwszy element jest pusty dlatego trzeba przepiąć go teraz
+        ++number; //zwiększ numer porzadkowy
+    }
+
+    return number - 1; //zwroc numer porzadkowy ostatniego elementu
 }
