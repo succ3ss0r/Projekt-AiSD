@@ -6,7 +6,8 @@
 #define MAXELEMENTS 30
 
 /*
-    Dodać algorytm deterministyczny i zachłanny wyszukujący trasę
+    Dodać opcję przerabiającą utworzoną listę na tablicę przejść lub listę przejść
+    Dodać algorytm niezachłanny i zachłanny wyszukujący trasę
     Dodać algoorytm genetyczny
 */
 
@@ -18,7 +19,8 @@ struct punkt {
     struct punkt *nastepny;
 };
 
-void menu();
+void menu(void);
+void listAlgorithms(void);
 int choose(int, int);
 int showPoints(struct punkt *);
 int checkIfExist(int, int, struct punkt *);
@@ -26,20 +28,57 @@ void addPoint(struct punkt *);
 void removePoint(struct punkt *);
 int countPoints(struct punkt *);
 
-
-void listAlgorithms(){
-    printf("\nDostepne algorytmy:");
-    printf("1. Algorytm zachlanny - lokalnie najkrotsza trasa");
-    printf("2. Algorytm deterministyczny - najkrotsza globalna trasa");
-    printf("3. Algorytm genetyczny");
-    printf("4. ")
+void algorithmGreedy(struct punkt *listaPunktow) {
+    //algorytm zachłanny
+    printf("\nZachlanny");
 }
 
-struct punkt * greedyAlgorithm(const struct punkt *) {
-    //algorytm zachłanny, który wybierze lokalną najkrótszą drogę przejścia przez graf
 
+void algorithmDeterministic(struct punkt *listaPunktow) {
+    //algorytm deterministyczny
 
+    printf("\nDeterministyczny");
 }
+
+void algorithmGenetic(struct punkt *listaPunktow) {
+    //algorytm genetyczny
+
+    printf("\nGenetyczny");
+}
+
+void chooseAlgorithm(struct punkt *listaPunktow) {
+    int wybor = -1;
+    while(wybor) {
+        listAlgorithms();
+        wybor = choose(0, 3);
+        switch(wybor) {
+            case 0:
+                break;
+            case 1:
+                //liczenie drogi algorytmem zachłannym
+
+                algorithmGreedy(listaPunktow);
+                break;
+            case 2:
+                //liczenie najkrótszej trasy algorytmem deterministycznym
+
+                algorithmDeterministic(listaPunktow);
+                break;
+            case 3:
+                //liczenie trasy algorytmem genetycznym
+
+                algorithmGenetic(listaPunktow);
+                break;
+            default:
+                //powiadom o błędzie
+
+                printf("\nNie ma takiego algorytmu!");
+
+        }
+
+    }
+}
+
 
 
 int main(int argc, char **argv) {
@@ -81,9 +120,9 @@ int main(int argc, char **argv) {
                 showPoints(listaPunktow);
                 break;
             case 4:
-                //jeżeli opcja będzie rowna 4 zacznij liczyć przejście odpowiednim algorytmem
+                //jeżeli opcja będzie rowna 4 wybierz algorytm
 
-                listAlgorithms();
+                chooseAlgorithm(listaPunktow);
                 break;
             default:
             printf("\tBlad wybory opcji z menu!");
@@ -95,7 +134,7 @@ int main(int argc, char **argv) {
 
 
 
-void menu() {
+void menu(void) {
     //wyswietla menu wyboru
 
     printf("Wybierz jedna z ponizszych opcji:\n");
@@ -104,6 +143,14 @@ void menu() {
     printf("\t2. Usuniecie punktu\n");
     printf("\t3. Wyswietlenie wszystkich punktow\n");
     printf("\t4. Obliczenie trasy\n");
+}
+
+void listAlgorithms(void) {
+    printf("\nDostepne algorytmy:");
+    printf("\n\t0. Wstecz");
+    printf("\n\t1. Algorytm zachlanny - lokalnie najkrotsza trasa");
+    printf("\n\t2. Algorytm deterministyczny - najkrotsza globalna trasa");
+    printf("\n\t3. Algorytm genetyczny");
 }
 
 int choose(int min, int max) {
@@ -122,7 +169,7 @@ int choose(int min, int max) {
     }
 }
 
-int showPoints(const struct punkt *listaPunktow) {
+int showPoints(struct punkt *listaPunktow) {
     //wyświetlanie elementów listy, zwraca numer porządkowy ostatniego elementu
 
     printf("\nAktualne punkty w bazie: ");
@@ -236,7 +283,7 @@ void removePoint(struct punkt *listaPunktow) {
     free(listaPunktow); //zwolnienie pamieci
 }
 
-int countPoints(const struct punkt *listaPunktow) {
+int countPoints(struct punkt *listaPunktow) {
     //wyświetlanie elementów listy zwraca numer ostatniego elementu
 
     int number = 1; //numery porządkowe od 1
