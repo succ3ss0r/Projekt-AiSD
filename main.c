@@ -5,12 +5,6 @@
 
 #define MAXELEMENTS 30
 
-/*
-    Dodać opcję przerabiającą utworzoną listę na tablicę przejść lub listę przejść
-    Dodać algorytm niezachłanny i zachłanny wyszukujący trasę
-    Dodać algoorytm genetyczny
-*/
-
 struct punkt {
     //struktura potrzebna do stworzenia listy punktow która zostanie przerobiona na tablicę przejść lub listy przejść
     int wspX;
@@ -45,6 +39,11 @@ void algorithmGenetic(struct punkt *listaPunktow) {
 
     printf("\nGenetyczny");
 }
+
+#include "algorithmGreedy.c"
+#include "algorithmDeterministic.c"
+#include "algorithmGenetic.c"
+
 
 void chooseAlgorithm(struct punkt *listaPunktow) {
     int wybor = -1;
