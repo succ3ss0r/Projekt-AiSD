@@ -22,27 +22,6 @@ void addPoint(struct punkt *);
 void removePoint(struct punkt *);
 int countPoints(struct punkt *);
 
-void algorithmGreedy(struct punkt *listaPunktow) {
-    //algorytm zachłanny
-    printf("\nZachlanny");
-}
-
-
-void algorithmDeterministic(struct punkt *listaPunktow) {
-    //algorytm deterministyczny
-
-    printf("\nDeterministyczny");
-}
-
-void algorithmGenetic(struct punkt *listaPunktow) {
-    //algorytm genetyczny
-
-    printf("\nGenetyczny");
-}
-
-#include "algorithmGreedy.c"
-#include "algorithmDeterministic.c"
-#include "algorithmGenetic.c"
 
 
 void chooseAlgorithm(struct punkt *listaPunktow) {
