@@ -41,6 +41,7 @@ int checkIfExist(int, int, struct punkt *);
 void addPoint(struct punkt *);
 void removePoint(struct punkt *);
 int countPoints(struct punkt *);
+struct punkt* znajdzMniejszeX(struct punkt *, int);
 
 void algorithmGreedy(struct punkt *listaPunktow, struct drogi *drogiPrzejsc) {
     //algorytm zachlanny
@@ -59,6 +60,8 @@ void algorithmGreedy(struct punkt *listaPunktow, struct drogi *drogiPrzejsc) {
         printf("\nPUNKT (%d, %d)", aktualnieOdwiedzane->wspX, aktualnieOdwiedzane->wspY);
     }
 }
+
+
 
 void chooseAlgorithm(struct punkt *listaPunktow, struct drogi* drogiPrzejsc) {
     if(countPoints(listaPunktow)) {
@@ -214,6 +217,32 @@ int showPoints(struct punkt *listaPunktow) {
     return number - 1; //zwroc numer porzadkowy ostatniego elementu
 }
 
+struct punkt* znajdzMniejszeX(struct punkt *listaPunktow, int x) {
+    //funkcja zwraca adres elementu z mniejszą współrzędną x
+
+    if(!listaPunktow->nastepny || listaPunktow->nastepny->wspX >= x)
+        //jeżeli dodawany będzie pierwszy element lub X pierwszego elementu będzie więsze od dodawanego zwróć wskaźnik na listę
+        return listaPunktow;
+
+    struct punkt *poprzedni = listaPunktow->nastepny; //utwórz miejsce gdzie będzie przechowany poprzedni element listy
+    listaPunktow = listaPunktow->nastepny; //ustaw listę na pierwszy element (nie na wskażnik listy)
+
+    while(listaPunktow->wspX <= x) {
+        //dopóki wspX aktualnej listy jest większe bądź równe x oraz istnieją następne elementy w liście
+
+        poprzedni = listaPunktow; //przełącz wskażnik poprzedniego na aktualny element
+        if(listaPunktow->nastepny)
+            //sprawdza czy istnieje nastepny element w liście
+            listaPunktow = listaPunktow->nastepny; //przesuń wskażnik o jeden dalej
+        else
+            //jeżeli nie ma nastepnego elementu w liście wyjdż z while
+            break;
+    }
+
+    //zwróć adres element za który trzeba wstawić element
+    return poprzedni;
+};
+
 int checkIfExist(int x, int y, struct punkt *listaPunktow) {
     //sprawdza czy istnieje miasto o danych współrzędnych w liście
 
@@ -231,7 +260,6 @@ int checkIfExist(int x, int y, struct punkt *listaPunktow) {
 void addPoint(struct punkt *listaPunktow) {
     //dodaje tyle punktow ile chce użytkownik
 
-
     if(countPoints(listaPunktow) >= MAXELEMENTS) {
         //jeżeli lista jest już pełna
 
@@ -241,10 +269,12 @@ void addPoint(struct punkt *listaPunktow) {
 
     printf("\nPodaj ile punktów chcesz dodac");
     int ilosc = choose(0, 30 - countPoints(listaPunktow)), i = 0;
+    struct punkt *dodajPo;
     while(i < ilosc) {
         //dodanie tyle punktow ile wybral uzytkownik
 
         struct punkt *tmp = (struct punkt *) malloc(sizeof(struct punkt)); //zarezerwowanie pamięci
+        dodajPo = NULL;
 
         if(tmp) {
             //jeżeli poprawnie zalokowano pamięć
@@ -258,17 +288,19 @@ void addPoint(struct punkt *listaPunktow) {
             } while(checkIfExist(x, y, listaPunktow));
 
             //usupełnij współrzedne nowego punktu
-
             tmp->wspX = x;
             tmp->wspY = y;
 
-            tmp->nastepny = listaPunktow->nastepny; //ustaw wskaznik nowego elementu na stary listy
-            listaPunktow->nastepny = tmp; // przepnij wskaznik listy na poczatek
+            dodajPo = znajdzMniejszeX(listaPunktow, x);
+
+            tmp->nastepny = dodajPo->nastepny;
+            dodajPo->nastepny = tmp; // przepnij wskaznik listy na poczatek
 
             printf("\nDodano punkt (%d, %d)", tmp->wspX, tmp->wspY); //wyświetl komunikat o dodaniu punktu
             ++i;
         } else {
             //nie zalokowano pamięci
+
             printf("\nNie udalo sie zaalokowac pamieci!");
             return;
         }
@@ -279,7 +311,6 @@ void addPoint(struct punkt *listaPunktow) {
     else
         //jeżeli dodało się kilka punktów
         printf("\nDodano %d punktow.", i);
-
 }
 
 
