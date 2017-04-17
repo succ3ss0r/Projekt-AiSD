@@ -13,6 +13,26 @@ struct punkt {
     struct punkt *nastepny;
 };
 
+struct elementDrogi {
+    //struktura przechowuje przejścia pomiędzy poszczególnymi miastami oraz odległości pomiędzy nimi
+
+    struct punkt *miasto;
+    struct elementDrogi *nastepneMiasto;
+    float dlugoscTrasy;
+};
+
+struct drogi {
+    //struktura przechowująca listę przejść dla każdego z algorytmów oraz cąłkowitą przebytą trasę
+
+    struct elementDrogi *listaGreedy;
+    struct elementDrogi *listaDeterministic;
+    struct elementDrogi *listaGenetic;
+
+    float drogaGreedy;
+    float drogaDeterministic;
+    float drogaGenetic;
+};
+
 void menu(void);
 void listAlgorithms(void);
 int choose(int, int);
@@ -22,46 +42,68 @@ void addPoint(struct punkt *);
 void removePoint(struct punkt *);
 int countPoints(struct punkt *);
 
+void algorithmGreedy(struct punkt *listaPunktow, struct drogi *drogiPrzejsc) {
+    //algorytm zachlanny
+
+    struct punkt *aktualnieOdwiedzane = listaPunktow->nastepny; //aktualnie odwiedzane miasto
 
 
-void chooseAlgorithm(struct punkt *listaPunktow) {
-    int wybor = -1;
-    while(wybor) {
-        listAlgorithms();
-        wybor = choose(0, 3);
-        switch(wybor) {
-            case 0:
-                break;
-            case 1:
-                //liczenie drogi algorytmem zachłannym
+    aktualnieOdwiedzane->odwiedzony = 1; //odznaczenie ze miasto zostalo odwiedzone
+    struct punkt *nastepneOdwiedzane = listaPunktow->nastepny->nastepny; //ustawienie z poczatku na miasto znajdujace sie najblizej w liscie
+    float odlegloscOdAktualnegoMiasta = sqrt( pow(aktualnieOdwiedzane->wspX + nastepneOdwiedzane->wspX, 2) + pow(aktualnieOdwiedzane->wspY + nastepneOdwiedzane->wspY, 2) ); //obliczona pierwsza odleglosc
 
-                algorithmGreedy(listaPunktow);
-                break;
-            case 2:
-                //liczenie najkrótszej trasy algorytmem deterministycznym
+    int iloscMiast = countPoints(listaPunktow);
 
-                algorithmDeterministic(listaPunktow);
-                break;
-            case 3:
-                //liczenie trasy algorytmem genetycznym
+    for(int i = 0; i < iloscMiast; ++i) {
+        //pętla literująca tyle razy ile jest elementów w tablicy
+        printf("\nPUNKT (%d, %d)", aktualnieOdwiedzane->wspX, aktualnieOdwiedzane->wspY);
+    }
+}
 
-                algorithmGenetic(listaPunktow);
-                break;
-            default:
-                //powiadom o błędzie
+void chooseAlgorithm(struct punkt *listaPunktow, struct drogi* drogiPrzejsc) {
+    if(countPoints(listaPunktow)) {
+        //jeżeli istnieją elementy na liście punktów
 
-                printf("\nNie ma takiego algorytmu!");
+        int wybor = -1;
+        while(wybor) {
+            listAlgorithms();
+            wybor = choose(0, 3);
+            switch(wybor) {
+                case 0:
+                    break;
+                case 1:
+                    //liczenie drogi algorytmem zachłannym
+
+                    algorithmGreedy(listaPunktow, drogiPrzejsc);
+                    break;
+                case 2:
+                    //liczenie najkrótszej trasy algorytmem deterministycznym
+
+                    //algorithmDeterministic(listaPunktow);
+                    break;
+                case 3:
+                    //liczenie trasy algorytmem genetycznym
+
+                    //algorithmGenetic(listaPunktow);
+                    break;
+                default:
+                    //powiadom o błędzie
+
+                    printf("\nNie ma takiego algorytmu!");
+
+            }
 
         }
-
-    }
+    } else printf("\n\tBrak punktow! Najpierw dodaj ich kilka.");
 }
 
 
 
 int main(int argc, char **argv) {
-    struct punkt *listaPunktow = (struct punkt *) malloc(sizeof(struct punkt)); //utworzenie pierwszego pustego elementu
+    struct punkt *listaPunktow = (struct punkt *)malloc(sizeof(struct punkt)); //utworzenie pierwszego pustego elementu
     srand(time(NULL)); //ziarno do losowania punktów
+
+    struct drogi *drogiPrzejsc = (struct drogi *)malloc(sizeof(struct drogi));
 
     int opcja = 1; //strażnik pętli
 
@@ -100,7 +142,7 @@ int main(int argc, char **argv) {
             case 4:
                 //jeżeli opcja będzie rowna 4 wybierz algorytm
 
-                chooseAlgorithm(listaPunktow);
+                chooseAlgorithm(listaPunktow, drogiPrzejsc);
                 break;
             default:
             printf("\tBlad wybory opcji z menu!");
@@ -150,20 +192,23 @@ int choose(int min, int max) {
 int showPoints(struct punkt *listaPunktow) {
     //wyświetlanie elementów listy, zwraca numer porządkowy ostatniego elementu
 
-    printf("\nAktualne punkty w bazie: ");
-
     int number = 1; //numery porządkowe od 1
-    if(!listaPunktow->nastepny)
+
+    if(!listaPunktow->nastepny) {
         //jeżeli lista jest pusta wyświetl ostrzeżenie
         printf("\n\tBrak punktow! Najpierw dodaj ich kilka.");
+    } else {
+        //jeżeli lista zawiera elementy
 
-    while(listaPunktow->nastepny) {
-        //dopkóki element listy wskazuje na następny
+        printf("\nAktualne punkty w bazie: ");
+        while(listaPunktow->nastepny) {
+            //dopkóki element listy wskazuje na następny
 
-        listaPunktow = listaPunktow->nastepny; //pierwszy element jest pusty dlatego trzeba przepiąć go teraz
-        printf("\n\t%d. (%d, %d)", number, listaPunktow->wspX, listaPunktow->wspY);
+            listaPunktow = listaPunktow->nastepny; //pierwszy element jest pusty dlatego trzeba przepiąć go teraz
+            printf("\n\t%d. (%d, %d)", number, listaPunktow->wspX, listaPunktow->wspY);
 
-        ++number; //zwiększ numer porzadkowy
+            ++number; //zwiększ numer porzadkowy
+        }
     }
 
     return number - 1; //zwroc numer porzadkowy ostatniego elementu
@@ -195,8 +240,8 @@ void addPoint(struct punkt *listaPunktow) {
     }
 
     printf("\nPodaj ile punktów chcesz dodac");
-    int opcja = choose(0, 30 - countPoints(listaPunktow)), i = 0;
-    while(i < opcja) {
+    int ilosc = choose(0, 30 - countPoints(listaPunktow)), i = 0;
+    while(i < ilosc) {
         //dodanie tyle punktow ile wybral uzytkownik
 
         struct punkt *tmp = (struct punkt *) malloc(sizeof(struct punkt)); //zarezerwowanie pamięci
@@ -228,7 +273,7 @@ void addPoint(struct punkt *listaPunktow) {
             return;
         }
     }
-    if(opcja == 0)
+    if(ilosc == 0)
         //jeżeli chcemy dodać 0 punktów
         printf("\nNie dodano zadnego punktu.");
     else
@@ -241,9 +286,12 @@ void addPoint(struct punkt *listaPunktow) {
 void removePoint(struct punkt *listaPunktow) {
     //usuwanie wskazanego punktu
 
+    if(!countPoints(listaPunktow)) return;
+        //jeżeli nie ma punktów opuść funkcję
+
     int opcja = -1, max = showPoints(listaPunktow); //wyświetlenie wszystkich punktow oraz zapisanie ostatniego numeru porzadkowego do zmiennej
 
-    printf("\nWybierz punkt do usunięcia");
+    printf("\nWybierz punkt do usuniecia");
 
     do {
         opcja = choose(1, max);
