@@ -45,9 +45,9 @@ void algorithmGreedy(struct punkt *, struct drogi *);
 struct punkt* znajdzMniejszeX(struct punkt *, int);
 
 float calculateDistance(struct punkt *miasto1, struct punkt *miasto2) {
-//    float X = pow(miasto1->wspX - miasto2->wspX, 2);
-//    float Y = pow(miasto1->wspY - miasto2->wspY, 2);
-//    return sqrt(X + Y);
+    float X = pow(miasto1->wspX - miasto2->wspX, 2);
+    float Y = pow(miasto1->wspY - miasto2->wspY, 2);
+    return sqrt(X + Y);
 }
 
 void showRoute(struct elementDrogi *route) {
@@ -55,15 +55,22 @@ void showRoute(struct elementDrogi *route) {
     while(route->nastepneMiasto) {
         //pętla wypisująca do momentu aż skończy się trasa
 
+        route = route->nastepneMiasto;
         printf("\n%d. (%d, %d)", i, route->miasto->wspX, route->miasto->wspY);
         ++i;
     }
 }
 
-void addRoute(struct elementDrogi *listaDrogi, struct punkt *miasto) {
+void addRoute(struct elementDrogi *listaDrogi, struct punkt *miasto, float dlugoscTrasy) {
+    //dodanie miasta do ścieżki
+
+    struct elementDrogi *poczatekListy = listaDrogi;
+
     while(listaDrogi->nastepneMiasto)
         //znalezienie ostatniego elementu listy
-        listaDrogi = listaDrogi->nastepneMiasto; //przepięcie na nastepny element1
+
+        listaDrogi = listaDrogi->nastepneMiasto; //przepięcie na nastepny element
+    listaDrogi->dlugoscTrasy = dlugoscTrasy; //zapisanie długosci trasy
 
 
     struct elementDrogi *tmp = (struct elementDrogi *)malloc(sizeof(struct elementDrogi)); //alokacja pamięci
@@ -71,9 +78,10 @@ void addRoute(struct elementDrogi *listaDrogi, struct punkt *miasto) {
     if(tmp) {
         //jeżeli powiodło się zaalokowanie pamięci
         listaDrogi->nastepneMiasto = tmp;
+        listaDrogi->dlugoscTrasy = dlugoscTrasy;
 
         tmp->miasto = miasto;
-        tmp->dlugoscTrasy = calculateDistance(listaDrogi->miasto, miasto);
+        tmp->dlugoscTrasy = calculateDistance(poczatekListy->nastepneMiasto->miasto, miasto);
 
     } else {
         printf("Nie mozna utorzyc elementu");
@@ -86,24 +94,38 @@ void algorithmGreedy(struct punkt *listaPunktow, struct drogi *drogiPrzejsc) {
 
     struct punkt *aktualnieOdwiedzane = listaPunktow->nastepny; //aktualnie odwiedzane miasto
 
-
     aktualnieOdwiedzane->odwiedzony = 1; //odznaczenie ze miasto zostalo odwiedzone
-    struct punkt *nastepneOdwiedzane = listaPunktow->nastepny->nastepny; //ustawienie z poczatku na miasto znajdujace sie najblizej w liscie
 
-    float odlegloscOdAktualnegoMiasta = calculateDistance(aktualnieOdwiedzane, nastepneOdwiedzane); //obliczona pierwsza odleglosc
+    if(!drogiPrzejsc->listaGreedy->nastepneMiasto)
+        //jeżeli lista jest pusta dodaj pierwszy element
+        addRoute(drogiPrzejsc->listaGreedy, aktualnieOdwiedzane, 0);
+    struct punkt *nastepneOdwiedzane = listaPunktow->nastepny->nastepny; //ustawienie z poczatku na miasto znajdujace sie najblizej w liscie
 
     int iloscMiast = countPoints(listaPunktow); //policzona ilość miast
     struct punkt *kopiaWskaznikaListy;
     for(int i = 0; i < iloscMiast; ++i) {
         //pętla literująca tyle razy ile jest elementów w tablicy
+        float odlegloscOdAktualnegoMiasta = calculateDistance(aktualnieOdwiedzane, nastepneOdwiedzane); //obliczona pierwsza odleglosc
+
 
         kopiaWskaznikaListy = listaPunktow->nastepny; //ustawianie wskażnika zawsze na początek
         while(kopiaWskaznikaListy->nastepny) {
             if(kopiaWskaznikaListy->odwiedzony) {
-                //jeżeli miasto było już odwiedzone przejdz dalej i zacznij while od początku
+                //jeżeli miasto było już odwiedzone przejdz dalej i powróć do while
 
                 kopiaWskaznikaListy = kopiaWskaznikaListy->nastepny;
                 continue;
+            }
+
+            float odlegloscOdAktualnegoMiasta2 = calculateDistance(aktualnieOdwiedzane, kopiaWskaznikaListy->nastepny);
+            if(odlegloscOdAktualnegoMiasta < odlegloscOdAktualnegoMiasta2) {
+                //jeżeli odległość (pierwsze wolne - drugie wolne) > (pierwsze wolne - trzecie wolne)
+
+                aktualnieOdwiedzane = nastepneOdwiedzane; //przejscie do nastepnego miasta
+                nastepneOdwiedzane->odwiedzony = 1; //odwiedzenie miasta
+                addRoute(drogiPrzejsc->listaGreedy, nastepneOdwiedzane, odlegloscOdAktualnegoMiasta2);
+
+                nastepneOdwiedzane = kopiaWskaznikaListy;
             }
 
 
@@ -115,7 +137,7 @@ void algorithmGreedy(struct punkt *listaPunktow, struct drogi *drogiPrzejsc) {
 
     printf("\nDroga algorytmu zachlannego: ");
 
-//    showRoute(drogiPrzejsc->listaGreedy);
+    showRoute(drogiPrzejsc->listaGreedy);
 }
 
 void chooseAlgorithm(struct punkt *listaPunktow, struct drogi* drogiPrzejsc) {
@@ -162,6 +184,7 @@ int main(int argc, char **argv) {
     srand(time(NULL)); //ziarno do losowania punktów
 
     struct drogi *drogiPrzejsc = (struct drogi *)malloc(sizeof(struct drogi));
+    drogiPrzejsc->listaGreedy = (struct elementDrogi *)malloc(sizeof(struct elementDrogi));
 
     int opcja = 1; //strażnik pętli
 
@@ -334,12 +357,14 @@ void addPoint(struct punkt *listaPunktow) {
         if(tmp) {
             //jeżeli poprawnie zalokowano pamięć
 
-            int x, y; //tymczasowe wspolrzedne które będą porównywane z wartosciami w liscie
+            int x = 3, y = 7; //tymczasowe wspolrzedne które będą porównywane z wartosciami w liscie
             do {
                 //losowanie wartosci dopóki nie bedą się powtarzać w liście
+                x += 2 * x;
+                y += y;
 
-                x = 10 + rand() % 610; //640 oraz pozostawione 10px od krańców ekranu (przestrzeń robocza 620px)
-                y = 10 + rand() % 450; //480 oraz pozostawione 10px od krańców ekranu (przestrzeń robocza 460px)
+//                x = 10 + rand() % 610; //640 oraz pozostawione 10px od krańców ekranu (przestrzeń robocza 620px)
+//                y = 10 + rand() % 450; //480 oraz pozostawione 10px od krańców ekranu (przestrzeń robocza 460px)
             } while(checkIfExist(x, y, listaPunktow));
 
             //usupełnij współrzedne nowego punktu
@@ -366,24 +391,6 @@ void addPoint(struct punkt *listaPunktow) {
     else
         //jeżeli dodało się kilka punktów
         printf("\nDodano %d punktow.", i);
-}
-
-void algorithmGreedy(struct punkt *listaPunktow, struct drogi *drogiPrzejsc) {
-    //algorytm zachlanny
-
-    struct punkt *aktualnieOdwiedzane = listaPunktow->nastepny; //aktualnie odwiedzane miasto
-
-
-    aktualnieOdwiedzane->odwiedzony = 1; //odznaczenie ze miasto zostalo odwiedzone
-    struct punkt *nastepneOdwiedzane = listaPunktow->nastepny->nastepny; //ustawienie z poczatku na miasto znajdujace sie najblizej w liscie
-    float odlegloscOdAktualnegoMiasta = sqrt( pow(aktualnieOdwiedzane->wspX + nastepneOdwiedzane->wspX, 2) + pow(aktualnieOdwiedzane->wspY + nastepneOdwiedzane->wspY, 2) ); //obliczona pierwsza odleglosc
-
-    int iloscMiast = countPoints(listaPunktow);
-
-    for(int i = 0; i < iloscMiast; ++i) {
-        //pętla literująca tyle razy ile jest elementów w tablicy
-        printf("\nPUNKT (%d, %d)", aktualnieOdwiedzane->wspX, aktualnieOdwiedzane->wspY);
-    }
 }
 
 void removePoint(struct punkt *listaPunktow) {
