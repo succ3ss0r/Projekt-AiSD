@@ -4,13 +4,27 @@
 #include <stdio.h>
 #include <time.h>
 
+#define SZEROKOSCOKNA 640
+#define WYSOKOSCOKNA 480
+
+#define KOLORPUNKTU 37,134,108
+#define ROZMIARPUNKTU 20
+
+void narysujPunkt(int x, int y) {
+    //rysuje punkt
+
+    al_draw_filled_circle(x, y, ROZMIARPUNKTU, al_map_rgb(KOLORPUNKTU));
+    al_draw_circle(x, y, ROZMIARPUNKTU, al_map_rgb(0, 0, 0), 2);
+    al_flip_display();
+}
+
 int main(int argc, char **argv) {
     srand(time(NULL));
 
     if( al_init() && al_init_primitives_addon() ) {
         //sprawdzenie czy biblioteka allegro została prawidlowo zainicjowana
 
-        ALLEGRO_DISPLAY *oknoKomiwojazera = al_create_display(640, 480); //utworzenie okna
+        ALLEGRO_DISPLAY *oknoKomiwojazera = al_create_display(SZEROKOSCOKNA, WYSOKOSCOKNA); //utworzenie okna
         if( oknoKomiwojazera ) {
             //sprawdzenie czy okno zostało prawidłowo utworzone
 
@@ -20,20 +34,9 @@ int main(int argc, char **argv) {
             al_flip_display();
             al_rest(1.0); //wstrzymanie ekranu
 
-            int x, y;
-            for(int i = 0; i < 100; i++) {
-                x = rand() % 640;
-                y = rand() % 480;
-
-                al_draw_filled_circle(x, y, 20, al_map_rgb(37, 134, 108));
-                al_draw_circle(x, y, 20, al_map_rgb(0, 0, 0), 1);
-                al_flip_display();
-                al_rest(0.1);
-            }
-
-            al_draw_filled_circle(50.0, 50.0, 20.0, al_map_rgb(37, 134, 108));
+            narysujPunkt(100, 150);
             al_flip_display();
-            al_rest(2.0);
+            al_rest(1.0);
 
             al_destroy_display(oknoKomiwojazera);
         } else {
