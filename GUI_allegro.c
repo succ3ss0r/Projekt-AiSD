@@ -1,6 +1,6 @@
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
-#include <mouse.h>
+#include <allegro5/mouse.h>
 #include <stdio.h>
 
 #define SZEROKOSCOKNA 640
@@ -87,7 +87,7 @@ struct punkt* znajdzMniejszeX(struct punkt *listaPunktow, int x) {
 
     //zwróć adres element za który trzeba wstawić element
     return poprzedni;
-};
+}
 
 int checkIfExist(int x, int y, struct punkt *listaPunktow) {
     //sprawdza czy istnieje miasto o danych współrzędnych w liście
