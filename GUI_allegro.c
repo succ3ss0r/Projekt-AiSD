@@ -3,6 +3,8 @@
 #include <allegro5/mouse.h>
 #include <stdio.h>
 
+#define MARGINES 5
+
 #define SZEROKOSCOKNA 640
 #define WYSOKOSCOKNA 600
 #define KOLOROKNA al_map_rgb(138,205,255)
@@ -208,7 +210,6 @@ void drawButtons() {
 }
 
 
-
 int main(int argc, char **argv) {
     ALLEGRO_DISPLAY *oknoKomiwojazera = NULL;
     ALLEGRO_EVENT_QUEUE *kolejkaZdarzen = NULL;
@@ -271,7 +272,11 @@ int main(int argc, char **argv) {
             if(wlasciwoscMyszy.y < WYSOKOSCPRZYCISKOW)
                 activeButton = activateButton(wlasciwoscMyszy.x);
             if(activeButton == 0) {
-                addPoint(listaPunktow, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
+                if(wlasciwoscMyszy.y > WYSOKOSCPRZYCISKOW + WYSOKOSCPASKAKOLORU + ROZMIARPUNKTU &&
+                   wlasciwoscMyszy.y < WYSOKOSCOKNA - PASEKSTANU - ROZMIARPUNKTU
+                   && wlasciwoscMyszy.x > ROZMIARPUNKTU
+                   && wlasciwoscMyszy.x < SZEROKOSCOKNA - ROZMIARPUNKTU)
+                    addPoint(listaPunktow, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
 
                 //rysujLinie(listaPunktow);
                 drawPoints(listaPunktow);
