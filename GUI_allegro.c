@@ -1,5 +1,7 @@
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
+#include <allegro5/allegro_font.h>
+#include <allegro5/allegro_ttf.h>
 #include <allegro5/mouse.h>
 #include <stdio.h>
 
@@ -10,7 +12,7 @@
 #define KOLOROKNA al_map_rgb(138,205,255)
 
 #define KOLORPUNKTU al_map_rgba(51,153,51,0.5)
-#define OBRAMOWANIEPUNKTU 236,249,236
+#define KOLOROBRAMOWANIAPUNKTU al_map_rgb(236,249,236)
 #define ROZMIARPUNKTU 15
 
 #define WYSOKOSCPRZYCISKOW 50
@@ -22,12 +24,7 @@
 
 #define PASEKSTANU 20
 
-#define MAXELEMENTS 30
-
-
-
-
-
+#define MAXELEMENTS 5
 
 struct punkt {
     //struktura potrzebna do stworzenia listy punktow która zostanie przerobiona na tablicę przejść lub listy przejść
@@ -36,7 +33,6 @@ struct punkt {
     int odwiedzony;
     struct punkt *nastepny;
 };
-
 struct elementDrogi {
     //struktura przechowuje przejścia pomiędzy poszczególnymi miastami oraz odległości pomiędzy nimi
 
@@ -44,7 +40,6 @@ struct elementDrogi {
     struct elementDrogi *nastepneMiasto;
     float dlugoscTrasy;
 };
-
 struct drogi {
     //struktura przechowująca listę przejść dla każdego z algorytmów oraz cąłkowitą przebytą trasę
 
@@ -56,14 +51,6 @@ struct drogi {
     float drogaDeterministic;
     float drogaGenetic;
 };
-
-
-
-
-
-
-
-
 
 struct punkt* znajdzMniejszeX(struct punkt *listaPunktow, int x) {
     //funkcja zwraca adres elementu z mniejszą współrzędną x
@@ -105,19 +92,45 @@ int checkIfExist(int x, int y, struct punkt *listaPunktow) {
     return 0;
 }
 
-void drawPoints(struct punkt *listaPunktow) {
+void clearInside() {
     al_draw_filled_rectangle(0, WYSOKOSCPRZYCISKOW + WYSOKOSCPASKAKOLORU, SZEROKOSCOKNA, WYSOKOSCOKNA - PASEKSTANU, KOLOROKNA);
-    while( listaPunktow->nastepny ) {
-        listaPunktow = listaPunktow->nastepny;
+}
 
-        al_draw_filled_circle(listaPunktow->wspX, listaPunktow->wspY, ROZMIARPUNKTU, KOLORPUNKTU);
-        al_draw_circle(listaPunktow->wspX, listaPunktow->wspY, ROZMIARPUNKTU, al_map_rgb(OBRAMOWANIEPUNKTU), 1);
+void drawLines(struct punkt *listaPunktow) {
+    //rysuje połączenia pomiedzy miejscami na mapie
+
+    struct punkt *copyPunkt = NULL;
+    while(listaPunktow->nastepny) {
+        listaPunktow=listaPunktow->nastepny;
+        copyPunkt = listaPunktow;
+        while(copyPunkt){
+            al_draw_line(listaPunktow->wspX, listaPunktow->wspY, copyPunkt->wspX, copyPunkt->wspY, CZARNY, 1);
+            copyPunkt = copyPunkt->nastepny;
+        }
     }
 }
 
-void rysujLinie(struct punkt *listaPunktow) {
+void drawLinesToNewPoint(struct punkt *listaPunktow, int x, int y) {
 
+    while(listaPunktow->nastepny) {
+        listaPunktow=listaPunktow->nastepny;
+            al_draw_line(listaPunktow->wspX, listaPunktow->wspY, x, y, CZARNY, 1);
+    }
 }
+
+void drawPoints(struct punkt *listaPunktow) {
+    drawLines(listaPunktow);
+
+    while( listaPunktow->nastepny ) {
+    //przechodzenie po całej liście punktow
+
+        listaPunktow = listaPunktow->nastepny;
+
+        al_draw_filled_circle(listaPunktow->wspX, listaPunktow->wspY, ROZMIARPUNKTU, KOLORPUNKTU);
+        al_draw_circle(listaPunktow->wspX, listaPunktow->wspY, ROZMIARPUNKTU, KOLOROBRAMOWANIAPUNKTU, 1);
+    }
+}
+
 
 void wyswietlListePuktow(struct punkt *listaPunktow) {
     while(listaPunktow) {
@@ -140,7 +153,6 @@ int countPoints(struct punkt *listaPunktow) {
         listaPunktow = listaPunktow->nastepny; //pierwszy element jest pusty dlatego trzeba przepiąć go teraz
         ++number; //zwiększ numer porzadkowy
     }
-
     return number - 1; //zwroc numer porzadkowy ostatniego elementu
 }
 
@@ -174,9 +186,10 @@ void addPoint(struct punkt *listaPunktow, int x, int y) {
     }
 }
 
-int activateButton(int buttonNo) {
+
+void activateButton(int buttonNo, int *activeButton) {
     ALLEGRO_COLOR color;
-    int value = NULL;
+    int value = 0;
 
     if(buttonNo < 640) {
         color = CZARNY;
@@ -196,46 +209,75 @@ int activateButton(int buttonNo) {
     }
 
     al_draw_filled_rectangle(0, WYSOKOSCPRZYCISKOW, SZEROKOSCOKNA, WYSOKOSCPRZYCISKOW + WYSOKOSCPASKAKOLORU, color);
-    return value;
+    *activeButton = value;
 }
 
-void drawButtons() {
+
+
+void drawButtons(int *activeButton, ALLEGRO_FONT *font) {
     //rysuje przyciski
 
     al_draw_filled_rectangle(0, 0, SZEROKOSCOKNA / 4, WYSOKOSCPRZYCISKOW, ZIELONY);
     al_draw_filled_rectangle(SZEROKOSCOKNA / 4, 0, SZEROKOSCOKNA / 2, WYSOKOSCPRZYCISKOW, ZOLTY);
     al_draw_filled_rectangle(SZEROKOSCOKNA / 2, 0, SZEROKOSCOKNA * 3 / 4, WYSOKOSCPRZYCISKOW, CZERWONY);
     al_draw_filled_rectangle(SZEROKOSCOKNA * 3 / 4, 0, SZEROKOSCOKNA, WYSOKOSCPRZYCISKOW, CZARNY);
-    activateButton(1);
+
+    activateButton(0, activeButton);
+
+    al_draw_text(font, al_map_rgb(255,255,255), SZEROKOSCOKNA / 8, WYSOKOSCPRZYCISKOW / 9, ALLEGRO_ALIGN_CENTRE, "DODAJ");
+    al_draw_text(font, al_map_rgb(255,255,255), 3 * SZEROKOSCOKNA / 8, WYSOKOSCPRZYCISKOW / 9, ALLEGRO_ALIGN_CENTRE, "EDYTUJ");
+    al_draw_text(font, al_map_rgb(255,255,255), 5 * SZEROKOSCOKNA / 8, WYSOKOSCPRZYCISKOW / 9, ALLEGRO_ALIGN_CENTRE, "USUŃ");
+    al_draw_text(font, al_map_rgb(255,255,255), 7 * SZEROKOSCOKNA / 8, WYSOKOSCPRZYCISKOW / 9, ALLEGRO_ALIGN_CENTRE, "POLICZ");
 }
 
+void changeButton(int x, int y, int *activeButton) {
+    if(y < WYSOKOSCPRZYCISKOW) {
+        activateButton(x, activeButton);
+        al_flip_display();
+    }
+}
+
+void drawStatusbar() {
+    al_draw_filled_rectangle(0, WYSOKOSCOKNA - 10, SZEROKOSCOKNA, WYSOKOSCOKNA, CZARNY);
+}
 
 int main(int argc, char **argv) {
-    ALLEGRO_DISPLAY *oknoKomiwojazera = NULL;
-    ALLEGRO_EVENT_QUEUE *kolejkaZdarzen = NULL;
-    struct punkt *listaPunktow = (struct punkt *)malloc(sizeof(struct punkt));
-
     if( !al_init() && !al_init_primitives_addon() ) {
         fprintf(stderr, "Nie mozna zainicjowac biblioteki allegro");
         return -1;
     }
-
-    oknoKomiwojazera = al_create_display(SZEROKOSCOKNA, WYSOKOSCOKNA);
-    if( !oknoKomiwojazera ) {
-        fprintf(stderr, "Nie mozna zainicjowac okna");
+    if( !al_init_font_addon()) {
+        fprintf(stderr, "Nie zainicjowano czcionek");
         return -1;
     }
-
+    if( !al_init_ttf_addon() ) {
+        fprintf(stderr, "Nie zainicjowano czcionek");
+        return -1;
+    }
     if( !al_install_mouse() ) {
         fprintf(stderr, "Nie udalo sie zainicjowac myszy");
         return -1;
     }
-
     if( !al_init_primitives_addon() ) {
         fprintf(stderr, "Nie udalo sie zainicjowac primitywow");
     }
 
-    kolejkaZdarzen = al_create_event_queue();
+
+
+    struct punkt *listaPunktow = (struct punkt *)malloc(sizeof(struct punkt));
+
+
+    ALLEGRO_DISPLAY *oknoKomiwojazera = al_create_display(SZEROKOSCOKNA, WYSOKOSCOKNA);
+    if( !oknoKomiwojazera ) {
+        fprintf(stderr, "Nie mozna zainicjowac okna");
+        return -1;
+    }
+    ALLEGRO_FONT *font72 = al_load_ttf_font("font.ttf", 30, 0);
+    if( !font72 ){
+        fprintf(stderr, "Nie udalo sie zainicjowac czcionki");
+        return -1;
+    }
+    ALLEGRO_EVENT_QUEUE *kolejkaZdarzen = al_create_event_queue();
     if( !kolejkaZdarzen ) {
         fprintf(stderr, "Nie mozna utworzyc kolejki zdarzen");
         return -1;
@@ -245,13 +287,14 @@ int main(int argc, char **argv) {
     al_register_event_source(kolejkaZdarzen, al_get_mouse_event_source());
 
     al_clear_to_color(KOLOROKNA);
-
-
-    int activeButton = 0;
-    drawButtons();
-
+    int activeButton;
+    drawButtons(&activeButton, font72);
 
     al_flip_display();
+
+    ALLEGRO_MOUSE_STATE wlasciwoscMyszy;
+    bool polozenieMyszyWewnatrzPolaRysowania = NULL;
+
 
     while(1) {
 
@@ -262,28 +305,77 @@ int main(int argc, char **argv) {
         bool get_event = al_wait_for_event_until(kolejkaZdarzen, &ev, &timeout);
 
         if(get_event && ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
-            break;
+        //jeżeli zamkniecie okna przez X na pasku okna
+            break; //wyjdź z pętli while
         }
 
-        if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
-            ALLEGRO_MOUSE_STATE wlasciwoscMyszy;
-            al_get_mouse_state(&wlasciwoscMyszy);
+        al_get_mouse_state(&wlasciwoscMyszy); //pobieraj informacje o myszy
+        if(activeButton == 0) {
+        //jeżeli jest aktywny tryb dodawania punktu
 
-            if(wlasciwoscMyszy.y < WYSOKOSCPRZYCISKOW)
-                activeButton = activateButton(wlasciwoscMyszy.x);
-            if(activeButton == 0) {
-                if(wlasciwoscMyszy.y > WYSOKOSCPRZYCISKOW + WYSOKOSCPASKAKOLORU + ROZMIARPUNKTU &&
-                   wlasciwoscMyszy.y < WYSOKOSCOKNA - PASEKSTANU - ROZMIARPUNKTU
-                   && wlasciwoscMyszy.x > ROZMIARPUNKTU
-                   && wlasciwoscMyszy.x < SZEROKOSCOKNA - ROZMIARPUNKTU)
+            polozenieMyszyWewnatrzPolaRysowania = wlasciwoscMyszy.y > WYSOKOSCPRZYCISKOW + WYSOKOSCPASKAKOLORU + ROZMIARPUNKTU && wlasciwoscMyszy.y < WYSOKOSCOKNA - PASEKSTANU - ROZMIARPUNKTU && wlasciwoscMyszy.x > ROZMIARPUNKTU && wlasciwoscMyszy.x < SZEROKOSCOKNA - ROZMIARPUNKTU;
+            if(polozenieMyszyWewnatrzPolaRysowania) {
+            //jeżeli chcesz machać samym punktem
+                if(countPoints(listaPunktow) == MAXELEMENTS) {
+                //jeżeli jest już maksymalna liczba elementów
+                    al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_UNAVAILABLE);
+                    al_show_mouse_cursor(oknoKomiwojazera);
+                    continue;
+                }
+                if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN){
+                //jeżeli kliknięcie
+                    clearInside();
                     addPoint(listaPunktow, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
-
-                //rysujLinie(listaPunktow);
-                drawPoints(listaPunktow);
+                    drawPoints(listaPunktow);
+                    al_flip_display();
+                } else {
+                //jeżeli tylko machanie myszką
+                    al_hide_mouse_cursor(oknoKomiwojazera);
+                    clearInside();
+                    drawLinesToNewPoint(listaPunktow, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
+                    drawPoints(listaPunktow);
+                    al_draw_filled_circle(wlasciwoscMyszy.x, wlasciwoscMyszy.y, ROZMIARPUNKTU, KOLORPUNKTU);
+                    al_draw_circle(wlasciwoscMyszy.x, wlasciwoscMyszy.y, ROZMIARPUNKTU, KOLOROBRAMOWANIAPUNKTU, 1);
+                    al_flip_display();
+                }
+            } else {
+            //jeżeli mysz nie znajduje się w polu wyznaczonym do rysowania
+                al_show_mouse_cursor(oknoKomiwojazera);
+                if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
+                //jeżeli nastąpi kliknięcie
+                    changeButton(wlasciwoscMyszy.x, wlasciwoscMyszy.y, &activeButton); //zmień przycisk myszy
+                } else {
+                    clearInside();
+                    drawPoints(listaPunktow);
+                    al_flip_display();
+                }
             }
-
-            al_flip_display();
         }
+        if(activeButton == 1) {
+        //jeżeli jest aktywny tryb modyfikacji punktow
+
+            if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
+            //jeżeli został wciśnięty przycisk myszy
+
+                changeButton(wlasciwoscMyszy.x, wlasciwoscMyszy.y, &activeButton);
+            }
+        }
+        if(activeButton == 2) {
+        //jeżeli jest aktywny tryb usuwania punktow
+
+            if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
+            //jeżeli został wciśnięty przycisk myszy
+                changeButton(wlasciwoscMyszy.x, wlasciwoscMyszy.y, &activeButton);
+            }
+        }
+        if(activeButton == 3) {
+        //jeżeli jest aktywny tryb usuwania punktow
+            if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
+            //jeżeli został wciśnięty przycisk myszy
+                changeButton(wlasciwoscMyszy.x, wlasciwoscMyszy.y, &activeButton);
+            }
+        }
+        al_rest(0.001);
     }
 
     al_destroy_display(oknoKomiwojazera);
