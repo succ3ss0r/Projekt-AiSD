@@ -393,7 +393,6 @@ int main(int argc, char **argv) {
                     elementListy = takePoint(listaPunktow, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
                     if(elementListy) {
                     //jeżeli zwróciło mi element na którym jest myszka
-                        tmpX = elementListy->wspX, tmpY = elementListy->wspY;
                         al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_LINK);
                     }
                     else {
@@ -401,7 +400,9 @@ int main(int argc, char **argv) {
                         tmpX = tmpY = 0;
                     }
                     if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN && elementListy) {
+                    //jeżeli zwróciło element i został on wciśnięty
                         al_show_mouse_cursor(oknoKomiwojazera);
+                        tmpX = elementListy->nastepny->wspX, tmpY = elementListy->nastepny->wspY;
                         deletePoint(elementListy);
                         elementListy = NULL;
                         clearInside();
@@ -432,12 +433,16 @@ int main(int argc, char **argv) {
                 }
             } else {
             //jeżeli mysz nie znajduje się w polu wyznaczonym do rysowania
+
                 if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
                 //jeżeli nastąpi kliknięcie
                     changeButton(wlasciwoscMyszy.x, wlasciwoscMyszy.y, &activeButton); //zmień przycisk myszy
                     if(modyfikacjaPunktu) {
                         addPoint(listaPunktow, tmpX, tmpY);
+                        tmpX = tmpY = 0;
                         modyfikacjaPunktu = false;
+                        printf("\nXD");
+                        printf("\n");
                     }
                 } else {
                     if(wlasciwoscMyszy.y < WYSOKOSCPRZYCISKOW)
