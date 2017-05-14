@@ -320,6 +320,7 @@ int main(int argc, char **argv) {
     bool modyfikacjaPunktu = false;
     int tmpX, tmpY;
     tmpX = tmpY = 0;
+    bool busyMouse = false;
 
     while(1) {
 
@@ -457,8 +458,6 @@ int main(int argc, char **argv) {
             }
 
         }
-
-
         if(activeButton == 2) {
         //jeżeli jest aktywny tryb usuwania punktow
 
@@ -497,9 +496,21 @@ int main(int argc, char **argv) {
         }
         if(activeButton == 3) {
         //jeżeli jest aktywny tryb usuwania punktow
-            if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
+            if(!busyMouse) {
+                al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_BUSY);
+                busyMouse = true;
+            }
+            if(wlasciwoscMyszy.y < WYSOKOSCPRZYCISKOW && wlasciwoscMyszy.x < SZEROKOSCOKNA * 3 / 4) {
+                al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_LINK);
+                busyMouse = false;
+            } else if(!busyMouse) {
+                al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_BUSY);
+                busyMouse = true;
+            }
+            if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN && wlasciwoscMyszy.y < WYSOKOSCPRZYCISKOW && wlasciwoscMyszy.x < SZEROKOSCOKNA * 3 / 4) {
             //jeżeli został wciśnięty przycisk myszy
                 changeButton(wlasciwoscMyszy.x, wlasciwoscMyszy.y, &activeButton);
+                busyMouse = false;
             }
         }
 //        al_rest(0.0025);
