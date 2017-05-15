@@ -442,8 +442,6 @@ int main(int argc, char **argv) {
                         addPoint(listaPunktow, tmpX, tmpY);
                         tmpX = tmpY = 0;
                         modyfikacjaPunktu = false;
-                        printf("\nXD");
-                        printf("\n");
                     }
                 } else {
                     if(wlasciwoscMyszy.y < WYSOKOSCPRZYCISKOW)
