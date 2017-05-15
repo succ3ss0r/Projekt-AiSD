@@ -511,7 +511,7 @@ int main(int argc, char **argv) {
                 busyMouse = false;
             }
         }
-//        al_rest(0.0025);
+        al_rest(0.0025);
     }
     al_destroy_display(oknoKomiwojazera);
     al_destroy_event_queue(kolejkaZdarzen);
