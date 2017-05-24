@@ -36,35 +36,13 @@ struct punkt {
     int odwiedzony;
     struct punkt *nastepny;
 };
-struct elementDrogi {
-    //struktura przechowuje przejścia pomiędzy poszczególnymi miastami oraz odległości pomiędzy nimi
-
-    struct punkt *miasto;
-    struct elementDrogi *nastepneMiasto;
-    float dlugoscTrasy;
-};
-struct drogi {
-    //struktura przechowująca listę przejść dla każdego z algorytmów oraz cąłkowitą przebytą trasę
-
-    struct elementDrogi *listaGreedy;
-    struct elementDrogi *listaDeterministic;
-    struct elementDrogi *listaGenetic;
-
-    float drogaGreedy;
-    float drogaDeterministic;
-    float drogaGenetic;
-};
-
 struct punkt* znajdzMniejszeX(struct punkt *listaPunktow, int x) {
     //funkcja zwraca adres elementu z mniejszą współrzędną x
-
     if(!listaPunktow->nastepny || listaPunktow->nastepny->wspX >= x)
         //jeżeli dodawany będzie pierwszy element lub X pierwszego elementu będzie więsze od dodawanego zwróć wskaźnik na listę
         return listaPunktow;
-
     struct punkt *poprzedni = listaPunktow->nastepny; //utwórz miejsce gdzie będzie przechowany poprzedni element listy
     listaPunktow = listaPunktow->nastepny; //ustaw listę na pierwszy element (nie na wskażnik listy)
-
     while(listaPunktow->wspX <= x) {
         //dopóki wspX aktualnej listy jest większe bądź równe x oraz istnieją następne elementy w liście
 
@@ -76,13 +54,11 @@ struct punkt* znajdzMniejszeX(struct punkt *listaPunktow, int x) {
             //jeżeli nie ma nastepnego elementu w liście wyjdż z while
             break;
     }
-
     //zwróć adres element za który trzeba wstawić element
     return poprzedni;
 }
 int checkIfExist(int x, int y, struct punkt *listaPunktow) {
     //sprawdza czy istnieje miasto o danych współrzędnych w liście
-
     while(listaPunktow->nastepny) {
         //dopkóki element listy wskazuje na następny
 
@@ -97,7 +73,6 @@ void clearInside() {
 }
 void drawLines(struct punkt *listaPunktow) {
     //rysuje połączenia pomiedzy miejscami na mapie
-
     struct punkt *copyPunkt = NULL;
     while(listaPunktow->nastepny) {
         listaPunktow=listaPunktow->nastepny;
@@ -128,7 +103,6 @@ void drawPoints(struct punkt *listaPunktow) {
     }
 }
 void drawPointsWithoutLines(struct punkt *listaPunktow) {
-
     while( listaPunktow->nastepny ) {
     //przechodzenie po całej liście punktow
 
@@ -271,15 +245,12 @@ struct punkt *takePoint(struct punkt *listaPunktow, int x, int y) {
     }
     return NULL;
 }
-
 void deletePoint(struct punkt *prev) {
     struct punkt *tmp = prev->nastepny;
     prev->nastepny = tmp->nastepny;
     free(tmp);
 }
-
 int main(int argc, char **argv) {
-
     if( allegroInitializeAllAddons() ) {
         return -1;
     }
@@ -305,42 +276,32 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Nie mozna utworzyc kolejki zdarzen");
         return -1;
     }
-
     al_register_event_source(kolejkaZdarzen, al_get_display_event_source(oknoKomiwojazera));
     al_register_event_source(kolejkaZdarzen, al_get_mouse_event_source());
 
     al_clear_to_color(KOLOROKNA);
     int activeButton;
     drawButtons(&activeButton, font72);
-
     al_flip_display();
-
     ALLEGRO_MOUSE_STATE wlasciwoscMyszy;
     bool polozenieMyszyWewnatrzPolaRysowania = NULL;
     bool modyfikacjaPunktu = false;
     int tmpX, tmpY;
     tmpX = tmpY = 0;
     bool busyMouse = false;
-
     while(1) {
-
         ALLEGRO_EVENT ev;
         ALLEGRO_TIMEOUT timeout;
         al_init_timeout(&timeout, 0.06);
-
         bool get_event = al_wait_for_event_until(kolejkaZdarzen, &ev, &timeout);
-
         if(get_event && ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
         //jeżeli zamkniecie okna przez X na pasku okna
             break; //wyjdź z pętli while
         }
-
-
         struct punkt *elementListy = NULL;
         al_get_mouse_state(&wlasciwoscMyszy); //pobieraj informacje o myszy
         if(activeButton == 0) {
         //jeżeli jest aktywny tryb dodawania punktu
-
             polozenieMyszyWewnatrzPolaRysowania = wlasciwoscMyszy.y > WYSOKOSCPRZYCISKOW + WYSOKOSCPASKAKOLORU + ROZMIARPUNKTU && wlasciwoscMyszy.y < WYSOKOSCOKNA - PASEKSTANU - ROZMIARPUNKTU && wlasciwoscMyszy.x > ROZMIARPUNKTU && wlasciwoscMyszy.x < SZEROKOSCOKNA - ROZMIARPUNKTU;
             if(polozenieMyszyWewnatrzPolaRysowania) {
             //jeżeli chcesz machać samym punktem
@@ -385,7 +346,6 @@ int main(int argc, char **argv) {
         }
         if(activeButton == 1) {
         //jeżeli jest aktywny tryb modyfikacji punktów
-
             polozenieMyszyWewnatrzPolaRysowania = wlasciwoscMyszy.y > WYSOKOSCPRZYCISKOW + WYSOKOSCPASKAKOLORU + ROZMIARPUNKTU && wlasciwoscMyszy.y < WYSOKOSCOKNA - PASEKSTANU - ROZMIARPUNKTU && wlasciwoscMyszy.x > ROZMIARPUNKTU && wlasciwoscMyszy.x < SZEROKOSCOKNA - ROZMIARPUNKTU;
             if(polozenieMyszyWewnatrzPolaRysowania) {
             //jeżeli znajduje sie w polu rysowania
@@ -434,7 +394,6 @@ int main(int argc, char **argv) {
                 }
             } else {
             //jeżeli mysz nie znajduje się w polu wyznaczonym do rysowania
-
                 if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
                 //jeżeli nastąpi kliknięcie
                     changeButton(wlasciwoscMyszy.x, wlasciwoscMyszy.y, &activeButton); //zmień przycisk myszy
@@ -454,11 +413,9 @@ int main(int argc, char **argv) {
                     al_flip_display();
                 }
             }
-
         }
         if(activeButton == 2) {
         //jeżeli jest aktywny tryb usuwania punktow
-
             polozenieMyszyWewnatrzPolaRysowania = wlasciwoscMyszy.y > WYSOKOSCPRZYCISKOW + WYSOKOSCPASKAKOLORU + ROZMIARPUNKTU && wlasciwoscMyszy.y < WYSOKOSCOKNA - PASEKSTANU - ROZMIARPUNKTU && wlasciwoscMyszy.x > ROZMIARPUNKTU && wlasciwoscMyszy.x < SZEROKOSCOKNA - ROZMIARPUNKTU;
             elementListy = takePoint(listaPunktow, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
             if(polozenieMyszyWewnatrzPolaRysowania) {
