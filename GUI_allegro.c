@@ -164,7 +164,7 @@ void addPoint(struct punkt *listaPunktow, int x, int y) {
     while(listaPunktow->nastepny)
         listaPunktow = listaPunktow->nastepny;
 
-    struct punkt *tmp = (struct punkt *) malloc(sizeof(struct punkt)); //zarezerwowanie pamięci
+    struct punkt *tmp = (struct punkt *)calloc(1, sizeof(struct punkt)); //zarezerwowanie pamięci
 
     if(tmp) {
         //jeżeli poprawnie zalokowano pamięć
@@ -172,12 +172,10 @@ void addPoint(struct punkt *listaPunktow, int x, int y) {
         //usupełnij współrzedne nowego punktu
         tmp->wspX = x;
         tmp->wspY = y;
-
-        tmp->nastepny = listaPunktow->nastepny;
+        tmp->nastepny = NULL;
         listaPunktow->nastepny = tmp; // przepnij wskaznik listy na poczatek
     } else {
         //nie zalokowano pamięci
-
         fprintf(stderr, "\nNie udalo sie zaalokowac pamieci!");
         return;
     }
@@ -270,10 +268,8 @@ void deletePoint(struct punkt *prev) {
     free(tmp);
 }
 double calculateDistance(struct punkt *miasto1, struct punkt *miasto2) {
-
     double X = pow(miasto1->wspX - miasto2->wspX, 2);
     double Y = pow(miasto1->wspY - miasto2->wspY, 2);
-    printf("\nLiczba X = %lf\nLiczba Y = %lf", X, Y);
     return sqrt(X + Y);
 }
 void algorithmGreedy(struct punkt *listaPunktow, struct punkt *listaZachlanny) {
@@ -282,7 +278,7 @@ void algorithmGreedy(struct punkt *listaPunktow, struct punkt *listaZachlanny) {
     aktualnieOdwiedzane->odwiedzony = true;
     addPoint(listaZachlanny, aktualnieOdwiedzane->wspX, aktualnieOdwiedzane->wspY);
 
-    struct punkt *miasto1, *miasto2;
+    struct punkt *miasto1 = NULL, *miasto2 = NULL;
 
     listaPunktow = listaPunktow->nastepny;
 
@@ -290,32 +286,25 @@ void algorithmGreedy(struct punkt *listaPunktow, struct punkt *listaZachlanny) {
     struct punkt *poczatekListy = aktualnieOdwiedzane;
     while(listaPunktow_CP->nastepny) {
         listaPunktow_CP = listaPunktow_CP->nastepny;
-
         miasto1 = miasto2 = NULL;
-
         listaPunktow = poczatekListy;
         while(listaPunktow){
             if(listaPunktow->odwiedzony) {
                 listaPunktow = listaPunktow->nastepny;
                 continue;
             }
-            if(!miasto1) {
+            if(miasto1 == NULL) {
                 miasto1 = listaPunktow;
                 listaPunktow = listaPunktow->nastepny;
                 continue;
             }
-            if(!miasto2) {
+            if(miasto2 == NULL) {
                 miasto2 = listaPunktow;
                 listaPunktow = listaPunktow->nastepny;
                 continue;
             }
-
-            printf("\nMiasto aktualne: (%d, %d), miasto1: (%d, %d), miasto2: (%d, %d)", aktualnieOdwiedzane->wspX, aktualnieOdwiedzane->wspY, miasto1->wspX, miasto1->wspY, miasto2->wspX, miasto2->wspY);
-
-            if(calculateDistance(aktualnieOdwiedzane, miasto1) > calculateDistance(aktualnieOdwiedzane, miasto2)) {
+            if(calculateDistance(aktualnieOdwiedzane, miasto1) > calculateDistance(aktualnieOdwiedzane, miasto2))
                 miasto1 = miasto2;
-                printf("Znalazlem blizsze miasto");
-            }
             listaPunktow = listaPunktow->nastepny;
             miasto2 = listaPunktow;
         }
@@ -334,6 +323,8 @@ int main(int argc, char **argv) {
     //inicjalizacja potrzebnych struktur
     struct punkt *listaPunktow = (struct punkt *)malloc(sizeof(struct punkt)); //utworzenie pierwszego pustego elementu
     struct punkt *listaZachlanny = (struct punkt *)malloc(sizeof(struct punkt));
+    listaPunktow->nastepny = NULL;
+    listaZachlanny->nastepny = NULL;
 
     ALLEGRO_DISPLAY *oknoKomiwojazera = al_create_display(SZEROKOSCOKNA, WYSOKOSCOKNA);
     ALLEGRO_FONT *font72 = al_load_ttf_font("font.ttf", 30, 0);
@@ -562,7 +553,8 @@ int main(int argc, char **argv) {
                 busyMouse = false;
             }
             if( policzonaSciezka == true ) {
-            //jeżeli ścieżka była już policzona
+            //jeżeli ścieżka była już policzona wyświetlą ją
+                printf("\n\n");
                 showPoints(listaZachlanny);
             }
             if( policzonaSciezka == false ) {
