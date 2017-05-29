@@ -13,36 +13,10 @@ struct punkt {
     bool odwiedzony;
     struct punkt *nastepny;
 };
-
-struct punkt* znajdzMniejszeX(struct punkt *listaPunktow, int x) {
-    //funkcja zwraca adres elementu z mniejszą współrzędną x
-
-    if(!listaPunktow->nastepny || listaPunktow->nastepny->wspX >= x)
-        //jeżeli dodawany będzie pierwszy element lub X pierwszego elementu będzie więsze od dodawanego zwróć wskaźnik na listę
-        return listaPunktow;
-
-    struct punkt *poprzedni = listaPunktow->nastepny; //utwórz miejsce gdzie będzie przechowany poprzedni element listy
-    listaPunktow = listaPunktow->nastepny; //ustaw listę na pierwszy element (nie na wskażnik listy)
-
-    while(listaPunktow->wspX <= x) {
-        //dopóki wspX aktualnej listy jest większe bądź równe x oraz istnieją następne elementy w liście
-
-        poprzedni = listaPunktow; //przełącz wskażnik poprzedniego na aktualny element
-        if(listaPunktow->nastepny)
-            //sprawdza czy istnieje nastepny element w liście
-            listaPunktow = listaPunktow->nastepny; //przesuń wskażnik o jeden dalej
-        else
-            //jeżeli nie ma nastepnego elementu w liście wyjdż z while
-            break;
-    }
-
-    //zwróć adres element za który trzeba wstawić element
-    return poprzedni;
-};
 void addPoint(struct punkt *listaPunktow, int x, int y) {
     //dodaje tyle punktow ile chce użytkownik
-    struct punkt *dodajPo;
-        //dodanie tyle punktow ile wybral uzytkownik
+    while(listaPunktow->nastepny)
+        listaPunktow = listaPunktow->nastepny;
 
         struct punkt *tmp = (struct punkt *) malloc(sizeof(struct punkt)); //zarezerwowanie pamięci
 
@@ -53,16 +27,12 @@ void addPoint(struct punkt *listaPunktow, int x, int y) {
         tmp->wspX = x;
         tmp->wspY = y;
 
-        dodajPo = znajdzMniejszeX(listaPunktow, x);
-
-        tmp->nastepny = dodajPo->nastepny;
-        dodajPo->nastepny = tmp; // przepnij wskaznik listy na poczatek
-
-        printf("\nDodano punkt (%d, %d)", tmp->wspX, tmp->wspY); //wyświetl komunikat o dodaniu punktu
+        tmp->nastepny = listaPunktow->nastepny;
+        listaPunktow->nastepny = tmp; // przepnij wskaznik listy na poczatek
     } else {
         //nie zalokowano pamięci
 
-        printf("\nNie udalo sie zaalokowac pamieci!");
+        fprintf(stderr, "\nNie udalo sie zaalokowac pamieci!");
         return;
     }
 }
@@ -77,7 +47,6 @@ int showPoints(struct punkt *listaPunktow) {
     } else {
         //jeżeli lista zawiera elementy
 
-        printf("\nAktualne punkty w bazie: ");
         while(listaPunktow->nastepny) {
             //dopkóki element listy wskazuje na następny
 
@@ -103,45 +72,84 @@ int checkIfExist(int x, int y, struct punkt *listaPunktow) {
 
     return 0;
 }
-int countPoints(struct punkt *listaPunktow) {
-    //wyświetlanie elementów listy zwraca numer ostatniego elementu
-
-    int number = 1; //numery porządkowe od 1
-    if(!listaPunktow->nastepny)
-        //jeżeli lista jest pusta wyświetl ostrzeżenie
-        return 0;
-
-    while(listaPunktow->nastepny) {
-        //dopkóki element listy wskazuje na następny
-
-        listaPunktow = listaPunktow->nastepny; //pierwszy element jest pusty dlatego trzeba przepiąć go teraz
-        ++number; //zwiększ numer porzadkowy
-    }
-
-    return number - 1; //zwroc numer porzadkowy ostatniego elementu
-}
 float calculateDistance(struct punkt *miasto1, struct punkt *miasto2) {
     float X = pow(miasto1->wspX - miasto2->wspX, 2);
     float Y = pow(miasto1->wspY - miasto2->wspY, 2);
     return sqrt(X + Y);
 }
-void algorithmGreedy(struct punkt *listaPunktow) {
+bool czyOdwiedzonoWszystkie(struct punkt *listaPunktow) {
+    while(listaPunktow){
+        if(listaPunktow->odwiedzony == false)
+            return true;
+        listaPunktow = listaPunktow->nastepny;
+    }
+    return false;
+}
+struct punkt *wolneMiasto(struct punkt *listaPunktow) {
+    while(listaPunktow) {
+        if(listaPunktow->odwiedzony == false)
+            return listaPunktow;
+        listaPunktow = listaPunktow->nastepny;
+    }
+    return NULL;
+}
+void algorithmGreedy(struct punkt *listaPunktow, struct punkt *listaZachlanny, double *dlugoscZachlanny) {
     //algorytm zachlanny
+    listaPunktow = listaPunktow->nastepny; //przepiecie na pierwszy element, zeby nie wskazywal na wartownika
+
+    struct punkt *cp_listaPunktow = listaPunktow; //zapamietanie wskaznika na liste
+    addPoint(listaZachlanny, listaPunktow->wspX, listaPunktow->wspY); //dodanie pierwszego punktu
+    listaPunktow->odwiedzony = true;
+
+    struct punkt *miastoOdwiedzane = listaPunktow; //miasto w ktorym aktualnie znajduje sie komiwojazer
+    struct punkt *miastoProba = NULL; //miasto do ktorego planuje isc
+    struct punkt *miastoTMP = NULL; //miasto do ktorego planuje isc
+
+    double odlegloscProba, odlegloscTMP;
+
+    while(czyOdwiedzonoWszystkie(cp_listaPunktow)) {
+    //dopóki jest jakieś miasto nieodwiedzone
+        listaPunktow = cp_listaPunktow; //ustaw wskaźnik na początek listy
+        miastoProba = wolneMiasto(cp_listaPunktow->nastepny); //znajdź I wolne miasto
+        miastoProba->odwiedzony = true;
+        while(listaPunktow) {
+        //przejdź przez całą listę
+            miastoTMP =  wolneMiasto(miastoProba); //znajdz II wolne miasto w liscie
+            if( !miastoTMP)
+            //jeżeli funkcja wolneMiasto zwróciła NULL do któregoś z miast
+                break; //przerwij pętle
+            odlegloscProba = calculateDistance(miastoOdwiedzane, miastoProba);
+            odlegloscTMP = calculateDistance(miastoOdwiedzane, miastoTMP);
+            if(odlegloscProba > odlegloscTMP) {
+            //jeżeli odległość do I wolnego miasta jest większa niż do drugiego wolnego
+                miastoProba->odwiedzony = false;
+                miastoProba = miastoTMP;
+            }
+            listaPunktow = listaPunktow->nastepny;
+        }
+        addPoint(listaZachlanny, miastoProba->wspX, miastoProba->wspY);
+        miastoProba->odwiedzony = true;
+        miastoOdwiedzane = miastoProba;
+    }
 }
 int main(int argc, char **argv) {
     struct punkt *listaPunktow = (struct punkt *)malloc(sizeof(struct punkt)); //utworzenie pierwszego pustego elementu
+    struct punkt *listaZachlanny = (struct punkt *)malloc(sizeof(struct punkt));
+    double dlugoscZachlanny = 0;
 
-    addPoint(listaPunktow, 5, 4);
-    addPoint(listaPunktow, 3, 2);
-    addPoint(listaPunktow, 7, 1);
     addPoint(listaPunktow, 1, 8);
+    addPoint(listaPunktow, 3, 2);
+    addPoint(listaPunktow, 5, 4);
+    addPoint(listaPunktow, 7, 1);
     addPoint(listaPunktow, 7, 7);
 
+    printf("Aktualne punkty w bazie:");
     showPoints(listaPunktow);
 
-    algorithmGreedy(listaPunktow);
+    algorithmGreedy(listaPunktow, listaZachlanny, &dlugoscZachlanny);
 
-    printf("\nDroga algorytmu zachlannego o trasie: %lf" );
+    printf("\nDroga algorytmu zachlannego o trasie: %0.3lf", dlugoscZachlanny);
+    showPoints(listaZachlanny);
 
     return 0;
 }
