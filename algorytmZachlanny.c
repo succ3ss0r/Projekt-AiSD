@@ -104,33 +104,43 @@ void algorithmGreedy(struct punkt *listaPunktow, struct punkt *listaZachlanny, d
 
     listaPunktow = listaPunktow->nastepny;
 
-    while(listaPunktow){
-            printf("\nXD %d, %d", listaPunktow->wspX, listaPunktow->wspY);
-        if(listaPunktow->odwiedzony) {
+    struct punkt *listaPunktow_CP = aktualnieOdwiedzane;
+    struct punkt *poczatekListy = aktualnieOdwiedzane;
+    while(listaPunktow_CP->nastepny) {
+        listaPunktow_CP = listaPunktow_CP->nastepny;
+
+        listaPunktow = poczatekListy;
+        while(listaPunktow){
+                printf("\nXD %d, %d", listaPunktow->wspX, listaPunktow->wspY);
+            if(listaPunktow->odwiedzony) {
+                listaPunktow = listaPunktow->nastepny;
+                continue;
+            }
+            if(!miasto1) {
+                miasto1 = listaPunktow;
+                listaPunktow = listaPunktow->nastepny;
+                continue;
+            }
+            if(!miasto2) {
+                miasto2 = listaPunktow;
+                listaPunktow = listaPunktow->nastepny;
+                continue;
+            }
+
+            printf("\nMiasto aktualne: (%d, %d), miasto1: (%d, %d), miasto2: (%d, %d)", aktualnieOdwiedzane->wspX, aktualnieOdwiedzane->wspY, miasto1->wspX, miasto1->wspY, miasto2->wspX, miasto2->wspY);
+
+            if(calculateDistance(aktualnieOdwiedzane, miasto1) > calculateDistance(aktualnieOdwiedzane, miasto2)) {
+                miasto1 = miasto2;
+                printf("Znalazlem blizsze miasto");
+            }
             listaPunktow = listaPunktow->nastepny;
-            continue;
-        }
-        if(!miasto1) {
-            miasto1 = listaPunktow;
-            listaPunktow = listaPunktow->nastepny;
-            continue;
-        }
-        if(!miasto2) {
             miasto2 = listaPunktow;
-            listaPunktow = listaPunktow->nastepny;
-            continue;
         }
-
-        printf("\nMiasto aktualne: (%d, %d), miasto1: (%d, %d), miasto2: (%d, %d)", aktualnieOdwiedzane->wspX, aktualnieOdwiedzane->wspY, miasto1->wspX, miasto1->wspY, miasto2->wspX, miasto2->wspY);
-
-        if(calculateDistance(aktualnieOdwiedzane, miasto1) > calculateDistance(aktualnieOdwiedzane, miasto2)) {
-            miasto1 = miasto2;
-            printf("Znalazlem blizsze miasto");
-        }
-        listaPunktow = listaPunktow->nastepny;
-        miasto2 = listaPunktow;
+        addPoint(listaZachlanny, miasto1->wspX, miasto1->wspY);
+        miasto1->odwiedzony = true;
+        aktualnieOdwiedzane = miasto1;
+        miasto1 = miasto2 = NULL;
     }
-    addPoint(listaZachlanny, miasto1->wspX, miasto1->wspY);
 }
 int main(int argc, char **argv) {
     struct punkt *listaPunktow = (struct punkt *)malloc(sizeof(struct punkt)); //utworzenie pierwszego pustego elementu
