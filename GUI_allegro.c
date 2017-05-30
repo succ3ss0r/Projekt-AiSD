@@ -298,13 +298,19 @@ void algorithmGreedy(struct punkt *listaPunktow, struct punkt *listaZachlanny) {
                 listaPunktow = listaPunktow->nastepny;
                 continue;
             }
+            if(miasto1 == listaPunktow) {
+                listaPunktow = listaPunktow->nastepny;
+                continue;
+            }
             if(miasto2 == NULL) {
                 miasto2 = listaPunktow;
                 listaPunktow = listaPunktow->nastepny;
                 continue;
             }
-            if(calculateDistance(aktualnieOdwiedzane, miasto1) > calculateDistance(aktualnieOdwiedzane, miasto2))
+            if(calculateDistance(aktualnieOdwiedzane, miasto1) > calculateDistance(aktualnieOdwiedzane, miasto2)) {
                 miasto1 = miasto2;
+                miasto2 = NULL;
+            }
             listaPunktow = listaPunktow->nastepny;
             miasto2 = listaPunktow;
         }
