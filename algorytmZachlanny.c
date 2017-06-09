@@ -70,39 +70,53 @@ void algorithmGreedy(struct punkt *listaPunktow, struct punkt *listaZachlanny, d
     aktualnieOdwiedzane->odwiedzony = true;
     addPoint(listaZachlanny, aktualnieOdwiedzane->wspX, aktualnieOdwiedzane->wspY);
 
-    struct punkt *miasto1 = NULL, *miasto2 = NULL;
+    struct punkt *miasto1, *miasto2;
 
     listaPunktow = listaPunktow->nastepny;
 
-    struct punkt *listaPunktow_CP = aktualnieOdwiedzane;
-    struct punkt *poczatekListy = aktualnieOdwiedzane;
+    struct punkt *listaPunktow_CP = listaPunktow;
+    struct punkt *poczatekListy = listaPunktow;
     while(listaPunktow_CP->nastepny) {
         listaPunktow_CP = listaPunktow_CP->nastepny;
         miasto1 = miasto2 = NULL;
         listaPunktow = poczatekListy;
         while(listaPunktow){
             if(listaPunktow->odwiedzony) {
+                printf("\nPrzeskoczenie");
                 listaPunktow = listaPunktow->nastepny;
                 continue;
             }
             if(!miasto1) {
+                printf("\nBrak miasto1");
                 miasto1 = listaPunktow;
                 listaPunktow = listaPunktow->nastepny;
                 continue;
             }
             if(!miasto2) {
+                printf("\nBrak miasto2\n");
                 miasto2 = listaPunktow;
                 listaPunktow = listaPunktow->nastepny;
                 continue;
             }
             if(calculateDistance(aktualnieOdwiedzane, miasto1) > calculateDistance(aktualnieOdwiedzane, miasto2))
                 miasto1 = miasto2;
-            listaPunktow = listaPunktow->nastepny;
             miasto2 = listaPunktow;
+            listaPunktow = listaPunktow->nastepny;
+
+
+            printf("Miasto1: %d, %d \tMiasto2: %d, %d\n", miasto1->wspX, miasto1->wspY, miasto2->wspX, miasto2->wspY);
         }
         addPoint(listaZachlanny, miasto1->wspX, miasto1->wspY);
         miasto1->odwiedzony = true;
         aktualnieOdwiedzane = miasto1;
+    }
+}
+void deleteList(struct punkt *listaPunktow){
+    struct punkt *tmp;
+    while(listaPunktow) {
+        tmp = listaPunktow;
+        free(listaPunktow);
+        listaPunktow = tmp->nastepny;
     }
 }
 int main(int argc, char **argv) {
@@ -110,11 +124,14 @@ int main(int argc, char **argv) {
     struct punkt *listaZachlanny = (struct punkt *)malloc(sizeof(struct punkt));
     double dlugoscZachlanny = 0;
 
-    addPoint(listaPunktow, 1, 8);
-    addPoint(listaPunktow, 3, 2);
-    addPoint(listaPunktow, 5, 4);
-    addPoint(listaPunktow, 7, 1);
-    addPoint(listaPunktow, 7, 7);
+    addPoint(listaPunktow, 195, 273);
+    addPoint(listaPunktow, 253, 523);
+    addPoint(listaPunktow, 468, 460);
+    addPoint(listaPunktow, 459, 276);
+    addPoint(listaPunktow, 371, 202);
+    addPoint(listaPunktow, 144, 142);
+    addPoint(listaPunktow, 37, 228);
+    addPoint(listaPunktow, 40, 127);
 
     printf("Aktualne punkty w bazie:");
     showPoints(listaPunktow);
@@ -124,6 +141,8 @@ int main(int argc, char **argv) {
     printf("\nDroga algorytmu zachlannego o trasie: %0.3lf", dlugoscZachlanny);
     showPoints(listaZachlanny);
 
+    deleteList(listaPunktow);
+    deleteList(listaZachlanny);
     return 0;
 }
 

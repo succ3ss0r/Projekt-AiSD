@@ -143,6 +143,16 @@ int showPoints(struct punkt *listaPunktow) {
 
     return number - 1; //zwroc numer porzadkowy ostatniego elementu
 }
+void showPointsPath(struct punkt *listaPunktow) {
+    int number = 0;
+    struct punkt *first = listaPunktow;
+    while(listaPunktow) {
+        listaPunktow = listaPunktow->nastepny;
+        al_draw_filled_circle(listaPunktow->wspX, listaPunktow->wspY, ROZMIARPUNKTU, KOLORPUNKTU);
+        al_draw_circle(listaPunktow->wspX, listaPunktow->wspY, ROZMIARPUNKTU, KOLOROBRAMOWANIAPUNKTU, 1);
+        number++;
+    }
+}
 int countPoints(struct punkt *listaPunktow) {
     //wyświetlanie elementów listy zwraca numer ostatniego elementu
 
@@ -311,12 +321,20 @@ void algorithmGreedy(struct punkt *listaPunktow, struct punkt *listaZachlanny) {
                 miasto1 = miasto2;
                 miasto2 = NULL;
             }
-            listaPunktow = listaPunktow->nastepny;
             miasto2 = listaPunktow;
+            listaPunktow = listaPunktow->nastepny;
         }
         addPoint(listaZachlanny, miasto1->wspX, miasto1->wspY);
         miasto1->odwiedzony = true;
         aktualnieOdwiedzane = miasto1;
+    }
+}
+void deleteList(struct punkt *listaPunktow){
+    struct punkt *tmp;
+    while(listaPunktow) {
+        tmp = listaPunktow;
+        free(listaPunktow);
+        listaPunktow = tmp->nastepny;
     }
 }
 
@@ -400,6 +418,7 @@ int main(int argc, char **argv) {
                 }
                 if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN){
                 //jeżeli kliknięcie
+                    fprintf(stderr, "\n%d, %d", wlasciwoscMyszy.x, wlasciwoscMyszy.y);
                     clearInside();
                     addPoint(listaPunktow, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
                     drawPoints(listaPunktow);
@@ -557,11 +576,12 @@ int main(int argc, char **argv) {
             //jeżeli został wciśnięty przycisk myszy
                 changeButton(wlasciwoscMyszy.x, wlasciwoscMyszy.y, &activeButton);
                 busyMouse = false;
+//tutaj usuwanie powinno sie odbyc lub wyczyszczenie policzonej listy
             }
             if( policzonaSciezka == true ) {
             //jeżeli ścieżka była już policzona wyświetlą ją
                 printf("\n\n");
-                showPoints(listaZachlanny);
+                showPointsPath(listaZachlanny);
             }
             if( policzonaSciezka == false ) {
             //policz ścieżkę
@@ -573,6 +593,10 @@ int main(int argc, char **argv) {
         }
         al_rest(0.0025);
     }
+
+    deleteList(listaPunktow);
+    deleteList(listaZachlanny);
+
     al_destroy_display(oknoKomiwojazera);
     al_destroy_event_queue(kolejkaZdarzen);
     return 0;
