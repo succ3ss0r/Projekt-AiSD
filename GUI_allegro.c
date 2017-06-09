@@ -17,6 +17,8 @@
 #define KOLORLINI al_map_rgb(0,178,255)
 #define KOLORLININOWYPUNKT al_map_rgba(51,153,51,0.5)
 #define ROZMIARPUNKTU 15
+#define ROZMIARCZCIONKIPRZYCISK 30
+#define ROZMIARCZCIONKIPUNKT 15
 
 #define WYSOKOSCPRZYCISKOW 50
 #define WYSOKOSCPASKAKOLORU 10
@@ -27,7 +29,7 @@
 
 #define PASEKSTANU 20
 
-#define MAXELEMENTS 20
+#define MAXELEMENTS 21
 
 struct punkt {
     //struktura potrzebna do stworzenia listy punktow która zostanie przerobiona na tablicę przejść lub listy przejść
@@ -36,17 +38,13 @@ struct punkt {
     int odwiedzony;
     struct punkt *nastepny;
 };
-
 struct punkt* znajdzMniejszeX(struct punkt *listaPunktow, int x) {
     //funkcja zwraca adres elementu z mniejszą współrzędną x
-
     if(!listaPunktow->nastepny || listaPunktow->nastepny->wspX >= x)
         //jeżeli dodawany będzie pierwszy element lub X pierwszego elementu będzie więsze od dodawanego zwróć wskaźnik na listę
         return listaPunktow;
-
     struct punkt *poprzedni = listaPunktow->nastepny; //utwórz miejsce gdzie będzie przechowany poprzedni element listy
     listaPunktow = listaPunktow->nastepny; //ustaw listę na pierwszy element (nie na wskażnik listy)
-
     while(listaPunktow->wspX <= x) {
         //dopóki wspX aktualnej listy jest większe bądź równe x oraz istnieją następne elementy w liście
 
@@ -58,13 +56,11 @@ struct punkt* znajdzMniejszeX(struct punkt *listaPunktow, int x) {
             //jeżeli nie ma nastepnego elementu w liście wyjdż z while
             break;
     }
-
     //zwróć adres element za który trzeba wstawić element
     return poprzedni;
 }
 int checkIfExist(int x, int y, struct punkt *listaPunktow) {
     //sprawdza czy istnieje miasto o danych współrzędnych w liście
-
     while(listaPunktow->nastepny) {
         //dopkóki element listy wskazuje na następny
 
@@ -79,7 +75,6 @@ void clearInside() {
 }
 void drawLines(struct punkt *listaPunktow) {
     //rysuje połączenia pomiedzy miejscami na mapie
-
     struct punkt *copyPunkt = NULL;
     while(listaPunktow->nastepny) {
         listaPunktow=listaPunktow->nastepny;
@@ -110,7 +105,6 @@ void drawPoints(struct punkt *listaPunktow) {
     }
 }
 void drawPointsWithoutLines(struct punkt *listaPunktow) {
-
     while( listaPunktow->nastepny ) {
     //przechodzenie po całej liście punktow
 
@@ -142,16 +136,6 @@ int showPoints(struct punkt *listaPunktow) {
     }
 
     return number - 1; //zwroc numer porzadkowy ostatniego elementu
-}
-void showPointsPath(struct punkt *listaPunktow) {
-    int number = 0;
-    struct punkt *first = listaPunktow;
-    while(listaPunktow) {
-        listaPunktow = listaPunktow->nastepny;
-        al_draw_filled_circle(listaPunktow->wspX, listaPunktow->wspY, ROZMIARPUNKTU, KOLORPUNKTU);
-        al_draw_circle(listaPunktow->wspX, listaPunktow->wspY, ROZMIARPUNKTU, KOLOROBRAMOWANIAPUNKTU, 1);
-        number++;
-    }
 }
 int countPoints(struct punkt *listaPunktow) {
     //wyświetlanie elementów listy zwraca numer ostatniego elementu
@@ -319,7 +303,6 @@ void algorithmGreedy(struct punkt *listaPunktow, struct punkt *listaZachlanny) {
             }
             if(calculateDistance(aktualnieOdwiedzane, miasto1) > calculateDistance(aktualnieOdwiedzane, miasto2)) {
                 miasto1 = miasto2;
-                miasto2 = NULL;
             }
             miasto2 = listaPunktow;
             listaPunktow = listaPunktow->nastepny;
@@ -330,28 +313,42 @@ void algorithmGreedy(struct punkt *listaPunktow, struct punkt *listaZachlanny) {
     }
 }
 void deleteList(struct punkt *listaPunktow){
-    struct punkt *tmp;
+}
+void showPointsPath(struct punkt *listaPunktow, ALLEGRO_FONT *circleFont) {
+    clearInside();
+    listaPunktow = listaPunktow->nastepny;
+    struct punkt *pierwszy = listaPunktow;
+    int number = 1;
+    while(listaPunktow->nastepny) {
+        al_draw_line(listaPunktow->wspX, listaPunktow->wspY, listaPunktow->nastepny->wspX, listaPunktow->nastepny->wspY, KOLORLINI, 2);
+        listaPunktow = listaPunktow->nastepny;
+    }
+    al_draw_line(pierwszy->wspX, pierwszy->wspY, listaPunktow->wspX, listaPunktow->wspY, KOLORLINI, 2);
+    listaPunktow = pierwszy;
     while(listaPunktow) {
-        tmp = listaPunktow;
-        free(listaPunktow);
-        listaPunktow = tmp->nastepny;
+        al_draw_filled_circle(listaPunktow->wspX, listaPunktow->wspY, ROZMIARPUNKTU, KOLORPUNKTU);
+        al_draw_circle(listaPunktow->wspX, listaPunktow->wspY, ROZMIARPUNKTU, KOLOROBRAMOWANIAPUNKTU, 1);
+        listaPunktow = listaPunktow->nastepny;
+    }
+    listaPunktow = pierwszy;
+    while(listaPunktow) {
+        al_draw_textf(circleFont, al_map_rgb(255, 255, 255), listaPunktow->wspX, listaPunktow->wspY-al_get_font_line_height(circleFont)/2, ALLEGRO_ALIGN_CENTER, "%d", number);
+        number++;
+        listaPunktow = listaPunktow->nastepny;
     }
 }
-
 int main(int argc, char **argv) {
-
     if( allegroInitializeAllAddons() ) {
         return -1;
     }
 
     //inicjalizacja potrzebnych struktur
-    struct punkt *listaPunktow = (struct punkt *)malloc(sizeof(struct punkt)); //utworzenie pierwszego pustego elementu
-    struct punkt *listaZachlanny = (struct punkt *)malloc(sizeof(struct punkt));
-    listaPunktow->nastepny = NULL;
-    listaZachlanny->nastepny = NULL;
+    struct punkt *listaPunktow = (struct punkt *)calloc(1, sizeof(struct punkt)); //utworzenie pierwszego pustego elementu
+    struct punkt *listaZachlanny = (struct punkt *)calloc(1, sizeof(struct punkt));
 
     ALLEGRO_DISPLAY *oknoKomiwojazera = al_create_display(SZEROKOSCOKNA, WYSOKOSCOKNA);
-    ALLEGRO_FONT *font72 = al_load_ttf_font("font.ttf", 30, 0);
+    ALLEGRO_FONT *font72 = al_load_ttf_font("font.ttf", ROZMIARCZCIONKIPRZYCISK, 0);
+    ALLEGRO_FONT *circleFont = al_load_ttf_font("font.ttf", ROZMIARCZCIONKIPUNKT, 0);
     ALLEGRO_EVENT_QUEUE *kolejkaZdarzen = al_create_event_queue();
     if( !listaPunktow ) {
         fprintf(stderr, "Nie udalo sie zainicjowac listy punktow");
@@ -369,16 +366,13 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Nie mozna utworzyc kolejki zdarzen");
         return -1;
     }
-
     al_register_event_source(kolejkaZdarzen, al_get_display_event_source(oknoKomiwojazera));
     al_register_event_source(kolejkaZdarzen, al_get_mouse_event_source());
 
     al_clear_to_color(KOLOROKNA);
     int activeButton;
     drawButtons(&activeButton, font72);
-
     al_flip_display();
-
     ALLEGRO_MOUSE_STATE wlasciwoscMyszy;
     bool polozenieMyszyWewnatrzPolaRysowania = NULL;
     bool modyfikacjaPunktu = false;
@@ -388,25 +382,18 @@ int main(int argc, char **argv) {
     bool policzonaSciezka = false;
 
     while(1) {
-
-
         ALLEGRO_EVENT ev;
         ALLEGRO_TIMEOUT timeout;
         al_init_timeout(&timeout, 0.06);
-
         bool get_event = al_wait_for_event_until(kolejkaZdarzen, &ev, &timeout);
-
         if(get_event && ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
         //jeżeli zamkniecie okna przez X na pasku okna
             break; //wyjdź z pętli while
         }
-
-
         struct punkt *elementListy = NULL;
         al_get_mouse_state(&wlasciwoscMyszy); //pobieraj informacje o myszy
         if(activeButton == 0) {
         //jeżeli jest aktywny tryb dodawania punktu
-
             polozenieMyszyWewnatrzPolaRysowania = wlasciwoscMyszy.y > WYSOKOSCPRZYCISKOW + WYSOKOSCPASKAKOLORU + ROZMIARPUNKTU && wlasciwoscMyszy.y < WYSOKOSCOKNA - PASEKSTANU - ROZMIARPUNKTU && wlasciwoscMyszy.x > ROZMIARPUNKTU && wlasciwoscMyszy.x < SZEROKOSCOKNA - ROZMIARPUNKTU;
             if(polozenieMyszyWewnatrzPolaRysowania) {
             //jeżeli chcesz machać samym punktem
@@ -418,7 +405,6 @@ int main(int argc, char **argv) {
                 }
                 if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN){
                 //jeżeli kliknięcie
-                    fprintf(stderr, "\n%d, %d", wlasciwoscMyszy.x, wlasciwoscMyszy.y);
                     clearInside();
                     addPoint(listaPunktow, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
                     drawPoints(listaPunktow);
@@ -452,7 +438,6 @@ int main(int argc, char **argv) {
         }
         if(activeButton == 1) {
         //jeżeli jest aktywny tryb modyfikacji punktów
-
             polozenieMyszyWewnatrzPolaRysowania = wlasciwoscMyszy.y > WYSOKOSCPRZYCISKOW + WYSOKOSCPASKAKOLORU + ROZMIARPUNKTU && wlasciwoscMyszy.y < WYSOKOSCOKNA - PASEKSTANU - ROZMIARPUNKTU && wlasciwoscMyszy.x > ROZMIARPUNKTU && wlasciwoscMyszy.x < SZEROKOSCOKNA - ROZMIARPUNKTU;
             if(polozenieMyszyWewnatrzPolaRysowania) {
             //jeżeli znajduje sie w polu rysowania
@@ -501,7 +486,6 @@ int main(int argc, char **argv) {
                 }
             } else {
             //jeżeli mysz nie znajduje się w polu wyznaczonym do rysowania
-
                 if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
                 //jeżeli nastąpi kliknięcie
                     changeButton(wlasciwoscMyszy.x, wlasciwoscMyszy.y, &activeButton); //zmień przycisk myszy
@@ -521,11 +505,9 @@ int main(int argc, char **argv) {
                     al_flip_display();
                 }
             }
-
         }
         if(activeButton == 2) {
         //jeżeli jest aktywny tryb usuwania punktow
-
             polozenieMyszyWewnatrzPolaRysowania = wlasciwoscMyszy.y > WYSOKOSCPRZYCISKOW + WYSOKOSCPASKAKOLORU + ROZMIARPUNKTU && wlasciwoscMyszy.y < WYSOKOSCOKNA - PASEKSTANU - ROZMIARPUNKTU && wlasciwoscMyszy.x > ROZMIARPUNKTU && wlasciwoscMyszy.x < SZEROKOSCOKNA - ROZMIARPUNKTU;
             elementListy = takePoint(listaPunktow, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
             if(polozenieMyszyWewnatrzPolaRysowania) {
@@ -580,8 +562,9 @@ int main(int argc, char **argv) {
             }
             if( policzonaSciezka == true ) {
             //jeżeli ścieżka była już policzona wyświetlą ją
-                printf("\n\n");
-                showPointsPath(listaZachlanny);
+                showPointsPath(listaZachlanny, circleFont);
+
+                al_flip_display();
             }
             if( policzonaSciezka == false ) {
             //policz ścieżkę
@@ -590,7 +573,8 @@ int main(int argc, char **argv) {
             }
 
 
-        }
+        } else
+            deleteList(listaZachlanny);
         al_rest(0.0025);
     }
 
