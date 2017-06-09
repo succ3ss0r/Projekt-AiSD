@@ -273,7 +273,7 @@ void algorithmGreedy(struct punkt *listaPunktow, struct punkt *listaZachlanny) {
     struct punkt *aktualnieOdwiedzane = listaPunktow->nastepny;
     aktualnieOdwiedzane->odwiedzony = true;
     addPoint(listaZachlanny, aktualnieOdwiedzane->wspX, aktualnieOdwiedzane->wspY);
-    struct punkt *miasto1, *miasto2, *tmp;
+    struct punkt *miasto1, *miasto2;
     listaPunktow = listaPunktow->nastepny;
     struct punkt *listaPunktow_CP = aktualnieOdwiedzane;
     struct punkt *poczatekListy = aktualnieOdwiedzane;
@@ -341,6 +341,32 @@ void showPointsPath(struct punkt *listaPunktow, ALLEGRO_FONT *circleFont) {
         listaPunktow = listaPunktow->nastepny;
     }
 }
+double countPath(struct punkt *listaPunktow) {
+    listaPunktow = listaPunktow->nastepny;
+    double dlugoscTrasy = 0;
+    struct punkt *miasto1 = NULL, *miasto2 = NULL, *pierwszeMiasto = listaPunktow;
+    while(listaPunktow) {
+        if(miasto1 == NULL) {
+            miasto1 = listaPunktow;
+            listaPunktow = listaPunktow->nastepny;
+            continue;
+        }
+        if(miasto2 == NULL) {
+            miasto2 = listaPunktow;
+            listaPunktow = listaPunktow->nastepny;
+        }
+        dlugoscTrasy += calculateDistance(miasto1, miasto2);
+        printf("\n\t%lf", dlugoscTrasy);
+        miasto1 = miasto2;
+        miasto2 = NULL;
+        if(!listaPunktow)
+            break;
+        listaPunktow = listaPunktow->nastepny;
+    }
+    miasto2 = pierwszeMiasto;
+    dlugoscTrasy += calculateDistance(miasto1, miasto2);
+    return dlugoscTrasy;
+}
 int main(int argc, char **argv) {
     if( allegroInitializeAllAddons() ) {
         return -1;
@@ -384,6 +410,7 @@ int main(int argc, char **argv) {
     tmpX = tmpY = 0;
     bool busyMouse = false;
     bool policzonaSciezka = false;
+    double dlugoscTrasy = 0;
 
     while(1) {
         ALLEGRO_EVENT ev;
@@ -409,8 +436,13 @@ int main(int argc, char **argv) {
                 }
                 if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN){
                 //jeżeli kliknięcie
+                    printf("%d %d\n", wlasciwoscMyszy.x, wlasciwoscMyszy.y);
                     clearInside();
-                    addPoint(listaPunktow, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
+                    addPoint(listaPunktow, 100, 100);
+                    addPoint(listaPunktow, 130, 130);
+                    addPoint(listaPunktow, 160, 200);
+
+//                    addPoint(listaPunktow, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
                     drawPoints(listaPunktow);
                     al_flip_display();
                 } else {
@@ -573,6 +605,8 @@ int main(int argc, char **argv) {
             if( policzonaSciezka == false ) {
             //policz ścieżkę
                 algorithmGreedy(listaPunktow, listaZachlanny);
+                dlugoscTrasy = countPath(listaZachlanny);
+                printf("\n%lf", dlugoscTrasy);
                 policzonaSciezka = true;
             }
 
