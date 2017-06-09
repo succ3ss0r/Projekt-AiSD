@@ -262,6 +262,8 @@ void deletePoint(struct punkt *prev) {
     free(tmp);
 }
 double calculateDistance(struct punkt *miasto1, struct punkt *miasto2) {
+    if(miasto2 == NULL)
+        return pow(miasto1->wspX, 2);
     double X = pow(miasto1->wspX - miasto2->wspX, 2);
     double Y = pow(miasto1->wspY - miasto2->wspY, 2);
     return sqrt(X + Y);
@@ -271,11 +273,8 @@ void algorithmGreedy(struct punkt *listaPunktow, struct punkt *listaZachlanny) {
     struct punkt *aktualnieOdwiedzane = listaPunktow->nastepny;
     aktualnieOdwiedzane->odwiedzony = true;
     addPoint(listaZachlanny, aktualnieOdwiedzane->wspX, aktualnieOdwiedzane->wspY);
-
-    struct punkt *miasto1 = NULL, *miasto2 = NULL;
-
+    struct punkt *miasto1, *miasto2, *tmp;
     listaPunktow = listaPunktow->nastepny;
-
     struct punkt *listaPunktow_CP = aktualnieOdwiedzane;
     struct punkt *poczatekListy = aktualnieOdwiedzane;
     while(listaPunktow_CP->nastepny) {
@@ -292,20 +291,25 @@ void algorithmGreedy(struct punkt *listaPunktow, struct punkt *listaZachlanny) {
                 listaPunktow = listaPunktow->nastepny;
                 continue;
             }
-            if(miasto1 == listaPunktow) {
-                listaPunktow = listaPunktow->nastepny;
-                continue;
-            }
             if(miasto2 == NULL) {
                 miasto2 = listaPunktow;
                 listaPunktow = listaPunktow->nastepny;
                 continue;
             }
+            if(miasto1 == listaPunktow || miasto2 == listaPunktow) {
+                listaPunktow = listaPunktow->nastepny;
+                continue;
+            }
             if(calculateDistance(aktualnieOdwiedzane, miasto1) > calculateDistance(aktualnieOdwiedzane, miasto2)) {
                 miasto1 = miasto2;
+                miasto2 = NULL;
             }
             miasto2 = listaPunktow;
             listaPunktow = listaPunktow->nastepny;
+        }
+        if(calculateDistance(aktualnieOdwiedzane, miasto1) > calculateDistance(aktualnieOdwiedzane, miasto2)) {
+            miasto1 = miasto2;
+            miasto2 = NULL;
         }
         addPoint(listaZachlanny, miasto1->wspX, miasto1->wspY);
         miasto1->odwiedzony = true;
