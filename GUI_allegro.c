@@ -154,7 +154,7 @@ int countPoints(struct punkt *listaPunktow) {
     return number - 1; //zwroc numer porzadkowy ostatniego elementu
 }
 void addPoint(struct punkt *listaPunktow, int x, int y) {
-    //dodaje tyle punktow ile chce użytkownik
+    //dodaje na koniec listy
     while(listaPunktow->nastepny)
         listaPunktow = listaPunktow->nastepny;
 
@@ -167,6 +167,23 @@ void addPoint(struct punkt *listaPunktow, int x, int y) {
         tmp->wspX = x;
         tmp->wspY = y;
         tmp->nastepny = NULL;
+        listaPunktow->nastepny = tmp; // przepnij wskaznik listy na poczatek
+    } else {
+        //nie zalokowano pamięci
+        fprintf(stderr, "\nNie udalo sie zaalokowac pamieci!");
+        return;
+    }
+}
+void addModifiedPoint(struct punkt *listaPunktow, int x, int y) {
+    //dodaje na poczatek listy punkt
+    struct punkt *tmp = (struct punkt *)calloc(1, sizeof(struct punkt)); //zarezerwowanie pamięci
+    if(tmp) {
+        //jeżeli poprawnie zalokowano pamięć
+
+        //usupełnij współrzedne nowego punktu
+        tmp->wspX = x;
+        tmp->wspY = y;
+        tmp->nastepny = listaPunktow->nastepny;
         listaPunktow->nastepny = tmp; // przepnij wskaznik listy na poczatek
     } else {
         //nie zalokowano pamięci
@@ -245,6 +262,7 @@ int allegroInitializeAllAddons(){
     return 0;
 }
 struct punkt *takePoint(struct punkt *listaPunktow, int x, int y) {
+    //zwraca wskaznik na punkt który chcemy przenieść
     int odleglosc = 0;
     struct punkt *prev = NULL;
     while(listaPunktow->nastepny){
@@ -257,6 +275,7 @@ struct punkt *takePoint(struct punkt *listaPunktow, int x, int y) {
     return NULL;
 }
 void deletePoint(struct punkt *prev) {
+    //uswuwa punkt nastepny w liscie
     struct punkt *tmp = prev->nastepny;
     prev->nastepny = tmp->nastepny;
     free(tmp);
@@ -270,6 +289,8 @@ double calculateDistance(struct punkt *miasto1, struct punkt *miasto2) {
 }
 void algorithmGreedy(struct punkt *listaPunktow, struct punkt *listaZachlanny) {
     //algorytm zachlanny
+    if(listaPunktow->nastepny == NULL)
+        return;
     struct punkt *aktualnieOdwiedzane = listaPunktow->nastepny;
     aktualnieOdwiedzane->odwiedzony = true;
     addPoint(listaZachlanny, aktualnieOdwiedzane->wspX, aktualnieOdwiedzane->wspY);
@@ -316,13 +337,28 @@ void algorithmGreedy(struct punkt *listaPunktow, struct punkt *listaZachlanny) {
         aktualnieOdwiedzane = miasto1;
     }
 }
+void unvisitAll(struct punkt *listaPunktow){
+    while(listaPunktow){
+        listaPunktow->odwiedzony = false;
+        listaPunktow = listaPunktow->nastepny;
+    }
+}
 void deleteList(struct punkt *listaPunktow){
+    struct punkt *tmp;
+    while(listaPunktow) {
+        tmp = listaPunktow->nastepny;
+        listaPunktow->nastepny = NULL;
+        free(listaPunktow->nastepny);
+        listaPunktow = tmp;
+    }
 }
 void showPointsPath(struct punkt *listaPunktow, ALLEGRO_FONT *circleFont) {
     clearInside();
     listaPunktow = listaPunktow->nastepny;
     struct punkt *pierwszy = listaPunktow;
     int number = 1;
+    if(!listaPunktow)
+        return;
     while(listaPunktow->nastepny) {
         al_draw_line(listaPunktow->wspX, listaPunktow->wspY, listaPunktow->nastepny->wspX, listaPunktow->nastepny->wspY, KOLORLINI, 2);
         listaPunktow = listaPunktow->nastepny;
@@ -343,6 +379,9 @@ void showPointsPath(struct punkt *listaPunktow, ALLEGRO_FONT *circleFont) {
 }
 double countPath(struct punkt *listaPunktow) {
     listaPunktow = listaPunktow->nastepny;
+    if(!listaPunktow)
+        //jezeli lista jest pusta
+        return 0;
     double dlugoscTrasy = 0;
     struct punkt *miasto1 = NULL, *miasto2 = NULL, *pierwszeMiasto = listaPunktow;
     while(listaPunktow) {
@@ -356,7 +395,6 @@ double countPath(struct punkt *listaPunktow) {
             listaPunktow = listaPunktow->nastepny;
         }
         dlugoscTrasy += calculateDistance(miasto1, miasto2);
-        printf("\n\t%lf", dlugoscTrasy);
         miasto1 = miasto2;
         miasto2 = NULL;
         if(!listaPunktow)
@@ -411,6 +449,7 @@ int main(int argc, char **argv) {
     bool busyMouse = false;
     bool policzonaSciezka = false;
     double dlugoscTrasy = 0;
+    struct punkt *elementListy = NULL;
 
     while(1) {
         ALLEGRO_EVENT ev;
@@ -421,7 +460,6 @@ int main(int argc, char **argv) {
         //jeżeli zamkniecie okna przez X na pasku okna
             break; //wyjdź z pętli while
         }
-        struct punkt *elementListy = NULL;
         al_get_mouse_state(&wlasciwoscMyszy); //pobieraj informacje o myszy
         if(activeButton == 0) {
         //jeżeli jest aktywny tryb dodawania punktu
@@ -436,13 +474,12 @@ int main(int argc, char **argv) {
                 }
                 if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN){
                 //jeżeli kliknięcie
-                    printf("%d %d\n", wlasciwoscMyszy.x, wlasciwoscMyszy.y);
-                    clearInside();
-                    addPoint(listaPunktow, 100, 100);
-                    addPoint(listaPunktow, 130, 130);
-                    addPoint(listaPunktow, 160, 200);
+                    policzonaSciezka = false; //oznaczenie ze potrzeba policzyc sciezke od nowa
+                    unvisitAll(listaPunktow); //oznaczenie miast jako nieodwiedzonych
+                    deleteList(listaZachlanny); //oproznienie trasy
 
-//                    addPoint(listaPunktow, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
+                    clearInside();
+                    addPoint(listaPunktow, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
                     drawPoints(listaPunktow);
                     al_flip_display();
                 } else {
@@ -478,7 +515,7 @@ int main(int argc, char **argv) {
             if(polozenieMyszyWewnatrzPolaRysowania) {
             //jeżeli znajduje sie w polu rysowania
                 if(modyfikacjaPunktu == false ) {
-                //jeżeli nie jest włączona edycja pola
+                //jeżeli nie jest włączona edycja punktu
                     elementListy = takePoint(listaPunktow, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
                     if(elementListy) {
                     //jeżeli zwróciło mi element na którym jest myszka
@@ -490,10 +527,15 @@ int main(int argc, char **argv) {
                     }
                     if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN && elementListy) {
                     //jeżeli zwróciło element i został on wciśnięty
+                        policzonaSciezka = false; //oznaczenie ze potrzeba policzyc sciezke od nowa
+                        unvisitAll(listaPunktow); //oznaczenie miast jako nieodwiedzonych
+                        deleteList(listaZachlanny); //oproznienie trasy
+
+
                         al_show_mouse_cursor(oknoKomiwojazera);
                         tmpX = elementListy->nastepny->wspX, tmpY = elementListy->nastepny->wspY;
                         deletePoint(elementListy);
-                        elementListy = NULL;
+
                         clearInside();
                         modyfikacjaPunktu = true;
                         continue;
@@ -506,7 +548,8 @@ int main(int argc, char **argv) {
                 //jezeli jestem w trakcie modyfikacji punktu
                     if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
                     //jezeli klikne aby nadac nowa pozycje punktowi
-                        addPoint(listaPunktow, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
+                        addModifiedPoint(elementListy, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
+                        elementListy = NULL;
                         modyfikacjaPunktu = false;
                         continue;
                     } else {
@@ -526,7 +569,8 @@ int main(int argc, char **argv) {
                 //jeżeli nastąpi kliknięcie
                     changeButton(wlasciwoscMyszy.x, wlasciwoscMyszy.y, &activeButton); //zmień przycisk myszy
                     if(modyfikacjaPunktu) {
-                        addPoint(listaPunktow, tmpX, tmpY);
+
+                        addModifiedPoint(elementListy, tmpX, tmpY);
                         tmpX = tmpY = 0;
                         modyfikacjaPunktu = false;
                     }
@@ -553,6 +597,11 @@ int main(int argc, char **argv) {
                     al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_DEFAULT);
                 al_show_mouse_cursor(oknoKomiwojazera);
                 if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN && elementListy) {
+                    //jezeli usuwa przycisk
+                    policzonaSciezka = false; //oznaczenie ze potrzeba policzyc sciezke od nowa
+                    unvisitAll(listaPunktow); //oznaczenie miast jako nieodwiedzonych
+                    deleteList(listaZachlanny); //oproznienie trasy
+
                     deletePoint(elementListy);
                     clearInside();
                     drawPoints(listaPunktow);
@@ -579,7 +628,7 @@ int main(int argc, char **argv) {
         }
         if(activeButton == 3) {
         //jeżeli jest aktywny tryb liczenia trasy
-            if(!busyMouse) {
+            if(!busyMouse && !policzonaSciezka) {
                 al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_BUSY);
                 busyMouse = true;
             }
@@ -599,20 +648,18 @@ int main(int argc, char **argv) {
             if( policzonaSciezka == true ) {
             //jeżeli ścieżka była już policzona wyświetlą ją
                 showPointsPath(listaZachlanny, circleFont);
-
+                al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_DEFAULT);
                 al_flip_display();
             }
             if( policzonaSciezka == false ) {
             //policz ścieżkę
                 algorithmGreedy(listaPunktow, listaZachlanny);
                 dlugoscTrasy = countPath(listaZachlanny);
-                printf("\n%lf", dlugoscTrasy);
                 policzonaSciezka = true;
             }
 
 
-        } else
-            deleteList(listaZachlanny);
+        }
         al_rest(0.0025);
     }
 
