@@ -38,6 +38,306 @@ struct punkt {
     int odwiedzony;
     struct punkt *nastepny;
 };
+
+struct punkt* znajdzMniejszeX(struct punkt*, int);
+int checkIfExist(int, int, struct punkt *);
+void clearInside(void);
+void drawLines(struct punkt *);
+void drawLinesToNewPoint(struct punkt *, int, int);
+void drawPoints(struct punkt *);
+void drawPointsWithoutLines(struct punkt *);
+int showPoints(struct punkt *);
+int countPoints(struct punkt *);
+void addPoint(struct punkt *, int, int);
+void addModifiedPoint(struct punkt *, int, int);
+void activateButton(int, int *);
+void drawButtons(int *, ALLEGRO_FONT *);
+void changeButton(int, int, int *);
+void drawStatusbar(void);
+int allegroInitializeAllAddons(void);
+struct punkt *takePoint(struct punkt *, int, int);
+void deletePoint(struct punkt *);
+double calculateDistance(struct punkt *, struct punkt *);
+void algorithmGreedy(struct punkt *, struct punkt *);
+void unvisitAll(struct punkt *);
+void deleteList(struct punkt *);
+void showPointsPath(struct punkt *, ALLEGRO_FONT *);
+double countPath(struct punkt *);
+void printHowLong(double, ALLEGRO_FONT *);
+
+int main(int argc, char **argv) {
+    if( allegroInitializeAllAddons() ) {
+        return -1;
+    }
+
+    //inicjalizacja potrzebnych struktur
+    struct punkt *listaPunktow = (struct punkt *)calloc(1, sizeof(struct punkt)); //utworzenie pierwszego pustego elementu
+    struct punkt *listaZachlanny = (struct punkt *)calloc(1, sizeof(struct punkt));
+
+    ALLEGRO_DISPLAY *oknoKomiwojazera = al_create_display(SZEROKOSCOKNA, WYSOKOSCOKNA);
+    ALLEGRO_FONT *font72 = al_load_ttf_font("font.ttf", ROZMIARCZCIONKIPRZYCISK, 0);
+    ALLEGRO_FONT *circleFont = al_load_ttf_font("font.ttf", ROZMIARCZCIONKIPUNKT, 0);
+    ALLEGRO_EVENT_QUEUE *kolejkaZdarzen = al_create_event_queue();
+    if( !listaPunktow ) {
+        fprintf(stderr, "Nie udalo sie zainicjowac listy punktow");
+        return -1;
+    }
+    if( !oknoKomiwojazera ) {
+        fprintf(stderr, "Nie mozna zainicjowac okna");
+        return -1;
+    }
+    if( !font72 ){
+        fprintf(stderr, "Nie udalo sie zainicjowac czcionki");
+        return -1;
+    }
+    if( !kolejkaZdarzen ) {
+        fprintf(stderr, "Nie mozna utworzyc kolejki zdarzen");
+        return -1;
+    }
+    al_register_event_source(kolejkaZdarzen, al_get_display_event_source(oknoKomiwojazera));
+    al_register_event_source(kolejkaZdarzen, al_get_mouse_event_source());
+
+    al_clear_to_color(KOLOROKNA);
+    int activeButton;
+    drawButtons(&activeButton, font72);
+    al_flip_display();
+    ALLEGRO_MOUSE_STATE wlasciwoscMyszy;
+    bool polozenieMyszyWewnatrzPolaRysowania = NULL;
+    bool modyfikacjaPunktu = false;
+    int tmpX, tmpY;
+    tmpX = tmpY = 0;
+    bool busyMouse = false;
+    bool policzonaSciezka = false;
+    double dlugoscTrasy = 0;
+    struct punkt *elementListy = NULL;
+
+    printHowLong(0, circleFont);
+
+    while(1) {
+        ALLEGRO_EVENT ev;
+        ALLEGRO_TIMEOUT timeout;
+        al_init_timeout(&timeout, 0.06);
+        bool get_event = al_wait_for_event_until(kolejkaZdarzen, &ev, &timeout);
+        if(get_event && ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
+        //jeżeli zamkniecie okna przez X na pasku okna
+            break; //wyjdź z pętli while
+        }
+        al_get_mouse_state(&wlasciwoscMyszy); //pobieraj informacje o myszy
+        if(activeButton == 0) {
+        //jeżeli jest aktywny tryb dodawania punktu
+            polozenieMyszyWewnatrzPolaRysowania = wlasciwoscMyszy.y > WYSOKOSCPRZYCISKOW + WYSOKOSCPASKAKOLORU + ROZMIARPUNKTU && wlasciwoscMyszy.y < WYSOKOSCOKNA - PASEKSTANU - ROZMIARPUNKTU && wlasciwoscMyszy.x > ROZMIARPUNKTU && wlasciwoscMyszy.x < SZEROKOSCOKNA - ROZMIARPUNKTU;
+            if(polozenieMyszyWewnatrzPolaRysowania) {
+            //jeżeli chcesz machać samym punktem
+                if(countPoints(listaPunktow) == MAXELEMENTS) {
+                //jeżeli jest już maksymalna liczba elementów
+                    al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_UNAVAILABLE);
+                    al_show_mouse_cursor(oknoKomiwojazera);
+                    continue;
+                }
+                if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN){
+                //jeżeli kliknięcie
+                    policzonaSciezka = false; //oznaczenie ze potrzeba policzyc sciezke od nowa
+                    unvisitAll(listaPunktow); //oznaczenie miast jako nieodwiedzonych
+                    deleteList(listaZachlanny); //oproznienie trasy
+                    printHowLong(0, circleFont); // usuniecie napisu
+
+                    clearInside();
+                    addPoint(listaPunktow, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
+                    drawPoints(listaPunktow);
+                    al_flip_display();
+                } else {
+                //jeżeli tylko machanie myszką
+                    al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_PRECISION);
+                    clearInside();
+                    drawLinesToNewPoint(listaPunktow, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
+                    drawPoints(listaPunktow);
+                    al_draw_filled_circle(wlasciwoscMyszy.x, wlasciwoscMyszy.y, ROZMIARPUNKTU, KOLORPUNKTU);
+                    al_draw_circle(wlasciwoscMyszy.x, wlasciwoscMyszy.y, ROZMIARPUNKTU, KOLOROBRAMOWANIAPUNKTU, 1);
+                    al_flip_display();
+                }
+            } else {
+            //jeżeli mysz nie znajduje się w polu wyznaczonym do rysowania
+                if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
+                //jeżeli nastąpi kliknięcie
+                    changeButton(wlasciwoscMyszy.x, wlasciwoscMyszy.y, &activeButton); //zmień przycisk myszy
+                } else {
+                    if(wlasciwoscMyszy.y < WYSOKOSCPRZYCISKOW)
+                        al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_LINK);
+                    else
+                        al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_DEFAULT);
+                    al_show_mouse_cursor(oknoKomiwojazera);
+                    clearInside();
+                    drawPoints(listaPunktow);
+                    al_flip_display();
+                }
+            }
+        }
+        if(activeButton == 1) {
+        //jeżeli jest aktywny tryb modyfikacji punktów
+            polozenieMyszyWewnatrzPolaRysowania = wlasciwoscMyszy.y > WYSOKOSCPRZYCISKOW + WYSOKOSCPASKAKOLORU + ROZMIARPUNKTU && wlasciwoscMyszy.y < WYSOKOSCOKNA - PASEKSTANU - ROZMIARPUNKTU && wlasciwoscMyszy.x > ROZMIARPUNKTU && wlasciwoscMyszy.x < SZEROKOSCOKNA - ROZMIARPUNKTU;
+            if(polozenieMyszyWewnatrzPolaRysowania) {
+            //jeżeli znajduje sie w polu rysowania
+                if(modyfikacjaPunktu == false ) {
+                //jeżeli nie jest włączona edycja punktu
+                    elementListy = takePoint(listaPunktow, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
+                    if(elementListy) {
+                    //jeżeli zwróciło mi element na którym jest myszka
+                        al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_LINK);
+                    }
+                    else {
+                        al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_DEFAULT);
+                        tmpX = tmpY = 0;
+                    }
+                    if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN && elementListy) {
+                    //jeżeli zwróciło element i został on wciśnięty
+                        policzonaSciezka = false; //oznaczenie ze potrzeba policzyc sciezke od nowa
+                        unvisitAll(listaPunktow); //oznaczenie miast jako nieodwiedzonych
+                        deleteList(listaZachlanny); //oproznienie trasy
+                        printHowLong(0, circleFont); //usuniecie trasy ze spodu ekranu
+
+
+                        al_show_mouse_cursor(oknoKomiwojazera);
+                        tmpX = elementListy->nastepny->wspX, tmpY = elementListy->nastepny->wspY;
+                        deletePoint(elementListy);
+
+                        clearInside();
+                        modyfikacjaPunktu = true;
+                        continue;
+                    }
+                    clearInside();
+                    drawPoints(listaPunktow);
+                    al_flip_display();
+                    al_show_mouse_cursor(oknoKomiwojazera);
+                } else {
+                //jezeli jestem w trakcie modyfikacji punktu
+                    if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
+                    //jezeli klikne aby nadac nowa pozycje punktowi
+                        addModifiedPoint(elementListy, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
+                        elementListy = NULL;
+                        modyfikacjaPunktu = false;
+                        continue;
+                    } else {
+                        al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_MOVE);
+                        clearInside();
+                        drawLines(listaPunktow);
+                        drawLinesToNewPoint(listaPunktow, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
+                        drawPointsWithoutLines(listaPunktow);
+                        al_draw_filled_circle(wlasciwoscMyszy.x, wlasciwoscMyszy.y, ROZMIARPUNKTU, KOLORPUNKTU);
+                        al_draw_circle(wlasciwoscMyszy.x, wlasciwoscMyszy.y, ROZMIARPUNKTU, KOLOROBRAMOWANIAPUNKTU, 1);
+                        al_flip_display();
+                    }
+                }
+            } else {
+            //jeżeli mysz nie znajduje się w polu wyznaczonym do rysowania
+                if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
+                //jeżeli nastąpi kliknięcie
+                    changeButton(wlasciwoscMyszy.x, wlasciwoscMyszy.y, &activeButton); //zmień przycisk myszy
+                    if(modyfikacjaPunktu) {
+
+                        addModifiedPoint(elementListy, tmpX, tmpY);
+                        tmpX = tmpY = 0;
+                        modyfikacjaPunktu = false;
+                    }
+                } else {
+                    if(wlasciwoscMyszy.y < WYSOKOSCPRZYCISKOW)
+                        al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_LINK);
+                    else
+                        al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_DEFAULT);
+                    al_show_mouse_cursor(oknoKomiwojazera);
+                    clearInside();
+                    drawPoints(listaPunktow);
+                    al_flip_display();
+                }
+            }
+        }
+        if(activeButton == 2) {
+        //jeżeli jest aktywny tryb usuwania punktow
+            polozenieMyszyWewnatrzPolaRysowania = wlasciwoscMyszy.y > WYSOKOSCPRZYCISKOW + WYSOKOSCPASKAKOLORU + ROZMIARPUNKTU && wlasciwoscMyszy.y < WYSOKOSCOKNA - PASEKSTANU - ROZMIARPUNKTU && wlasciwoscMyszy.x > ROZMIARPUNKTU && wlasciwoscMyszy.x < SZEROKOSCOKNA - ROZMIARPUNKTU;
+            elementListy = takePoint(listaPunktow, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
+            if(polozenieMyszyWewnatrzPolaRysowania) {
+                if(elementListy)
+                    al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_LINK);
+                else
+                    al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_DEFAULT);
+                al_show_mouse_cursor(oknoKomiwojazera);
+                if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN && elementListy) {
+                    //jezeli usuwa przycisk
+                    policzonaSciezka = false; //oznaczenie ze potrzeba policzyc sciezke od nowa
+                    unvisitAll(listaPunktow); //oznaczenie miast jako nieodwiedzonych
+                    deleteList(listaZachlanny); //oproznienie trasy
+                    printHowLong(0, circleFont); //usuniecie trasy ze spodu ekranu
+
+                    deletePoint(elementListy);
+                    clearInside();
+                    drawPoints(listaPunktow);
+                    al_flip_display();
+                    continue;
+                }
+            } else {
+            //jeżeli mysz nie znajduje się w polu wyznaczonym do rysowania
+                if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
+                //jeżeli nastąpi kliknięcie
+                    changeButton(wlasciwoscMyszy.x, wlasciwoscMyszy.y, &activeButton); //zmień przycisk myszy
+                    modyfikacjaPunktu = false;
+                } else {
+                    if(wlasciwoscMyszy.y < WYSOKOSCPRZYCISKOW)
+                        al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_LINK);
+                    else
+                        al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_DEFAULT);
+                    al_show_mouse_cursor(oknoKomiwojazera);
+                    clearInside();
+                    drawPoints(listaPunktow);
+                    al_flip_display();
+                }
+            }
+        }
+        if(activeButton == 3) {
+        //jeżeli jest aktywny tryb liczenia trasy
+            if(!busyMouse && !policzonaSciezka) {
+                al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_BUSY);
+                busyMouse = true;
+            }
+            if(wlasciwoscMyszy.y < WYSOKOSCPRZYCISKOW && wlasciwoscMyszy.x < SZEROKOSCOKNA * 3 / 4) {
+                al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_LINK);
+                busyMouse = false;
+            } else if(!busyMouse) {
+                al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_BUSY);
+                busyMouse = true;
+            }
+            if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN && wlasciwoscMyszy.y < WYSOKOSCPRZYCISKOW && wlasciwoscMyszy.x < SZEROKOSCOKNA * 3 / 4) {
+            //jeżeli został wciśnięty przycisk myszy
+                changeButton(wlasciwoscMyszy.x, wlasciwoscMyszy.y, &activeButton);
+                busyMouse = false;
+//tutaj usuwanie powinno sie odbyc lub wyczyszczenie policzonej listy
+            }
+            if( policzonaSciezka == true ) {
+            //jeżeli ścieżka była już policzona wyświetlą ją
+                showPointsPath(listaZachlanny, circleFont);
+                printHowLong(dlugoscTrasy, circleFont);
+                al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_DEFAULT);
+                al_flip_display();
+            }
+            if( policzonaSciezka == false ) {
+            //policz ścieżkę
+                algorithmGreedy(listaPunktow, listaZachlanny);
+                dlugoscTrasy = countPath(listaZachlanny);
+                policzonaSciezka = true;
+            }
+
+
+        }
+        al_rest(0.0025);
+    }
+
+    deleteList(listaPunktow);
+    deleteList(listaZachlanny);
+
+    al_destroy_display(oknoKomiwojazera);
+    al_destroy_event_queue(kolejkaZdarzen);
+    return 0;
+}
+
+
 struct punkt* znajdzMniejszeX(struct punkt *listaPunktow, int x) {
     //funkcja zwraca adres elementu z mniejszą współrzędną x
     if(!listaPunktow->nastepny || listaPunktow->nastepny->wspX >= x)
@@ -405,268 +705,9 @@ double countPath(struct punkt *listaPunktow) {
     dlugoscTrasy += calculateDistance(miasto1, miasto2);
     return dlugoscTrasy;
 }
-int main(int argc, char **argv) {
-    if( allegroInitializeAllAddons() ) {
-        return -1;
-    }
-
-    //inicjalizacja potrzebnych struktur
-    struct punkt *listaPunktow = (struct punkt *)calloc(1, sizeof(struct punkt)); //utworzenie pierwszego pustego elementu
-    struct punkt *listaZachlanny = (struct punkt *)calloc(1, sizeof(struct punkt));
-
-    ALLEGRO_DISPLAY *oknoKomiwojazera = al_create_display(SZEROKOSCOKNA, WYSOKOSCOKNA);
-    ALLEGRO_FONT *font72 = al_load_ttf_font("font.ttf", ROZMIARCZCIONKIPRZYCISK, 0);
-    ALLEGRO_FONT *circleFont = al_load_ttf_font("font.ttf", ROZMIARCZCIONKIPUNKT, 0);
-    ALLEGRO_EVENT_QUEUE *kolejkaZdarzen = al_create_event_queue();
-    if( !listaPunktow ) {
-        fprintf(stderr, "Nie udalo sie zainicjowac listy punktow");
-        return -1;
-    }
-    if( !oknoKomiwojazera ) {
-        fprintf(stderr, "Nie mozna zainicjowac okna");
-        return -1;
-    }
-    if( !font72 ){
-        fprintf(stderr, "Nie udalo sie zainicjowac czcionki");
-        return -1;
-    }
-    if( !kolejkaZdarzen ) {
-        fprintf(stderr, "Nie mozna utworzyc kolejki zdarzen");
-        return -1;
-    }
-    al_register_event_source(kolejkaZdarzen, al_get_display_event_source(oknoKomiwojazera));
-    al_register_event_source(kolejkaZdarzen, al_get_mouse_event_source());
-
-    al_clear_to_color(KOLOROKNA);
-    int activeButton;
-    drawButtons(&activeButton, font72);
-    al_flip_display();
-    ALLEGRO_MOUSE_STATE wlasciwoscMyszy;
-    bool polozenieMyszyWewnatrzPolaRysowania = NULL;
-    bool modyfikacjaPunktu = false;
-    int tmpX, tmpY;
-    tmpX = tmpY = 0;
-    bool busyMouse = false;
-    bool policzonaSciezka = false;
-    double dlugoscTrasy = 0;
-    struct punkt *elementListy = NULL;
-
-    while(1) {
-        ALLEGRO_EVENT ev;
-        ALLEGRO_TIMEOUT timeout;
-        al_init_timeout(&timeout, 0.06);
-        bool get_event = al_wait_for_event_until(kolejkaZdarzen, &ev, &timeout);
-        if(get_event && ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
-        //jeżeli zamkniecie okna przez X na pasku okna
-            break; //wyjdź z pętli while
-        }
-        al_get_mouse_state(&wlasciwoscMyszy); //pobieraj informacje o myszy
-        if(activeButton == 0) {
-        //jeżeli jest aktywny tryb dodawania punktu
-            polozenieMyszyWewnatrzPolaRysowania = wlasciwoscMyszy.y > WYSOKOSCPRZYCISKOW + WYSOKOSCPASKAKOLORU + ROZMIARPUNKTU && wlasciwoscMyszy.y < WYSOKOSCOKNA - PASEKSTANU - ROZMIARPUNKTU && wlasciwoscMyszy.x > ROZMIARPUNKTU && wlasciwoscMyszy.x < SZEROKOSCOKNA - ROZMIARPUNKTU;
-            if(polozenieMyszyWewnatrzPolaRysowania) {
-            //jeżeli chcesz machać samym punktem
-                if(countPoints(listaPunktow) == MAXELEMENTS) {
-                //jeżeli jest już maksymalna liczba elementów
-                    al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_UNAVAILABLE);
-                    al_show_mouse_cursor(oknoKomiwojazera);
-                    continue;
-                }
-                if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN){
-                //jeżeli kliknięcie
-                    policzonaSciezka = false; //oznaczenie ze potrzeba policzyc sciezke od nowa
-                    unvisitAll(listaPunktow); //oznaczenie miast jako nieodwiedzonych
-                    deleteList(listaZachlanny); //oproznienie trasy
-
-                    clearInside();
-                    addPoint(listaPunktow, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
-                    drawPoints(listaPunktow);
-                    al_flip_display();
-                } else {
-                //jeżeli tylko machanie myszką
-                    al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_PRECISION);
-                    clearInside();
-                    drawLinesToNewPoint(listaPunktow, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
-                    drawPoints(listaPunktow);
-                    al_draw_filled_circle(wlasciwoscMyszy.x, wlasciwoscMyszy.y, ROZMIARPUNKTU, KOLORPUNKTU);
-                    al_draw_circle(wlasciwoscMyszy.x, wlasciwoscMyszy.y, ROZMIARPUNKTU, KOLOROBRAMOWANIAPUNKTU, 1);
-                    al_flip_display();
-                }
-            } else {
-            //jeżeli mysz nie znajduje się w polu wyznaczonym do rysowania
-                if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
-                //jeżeli nastąpi kliknięcie
-                    changeButton(wlasciwoscMyszy.x, wlasciwoscMyszy.y, &activeButton); //zmień przycisk myszy
-                } else {
-                    if(wlasciwoscMyszy.y < WYSOKOSCPRZYCISKOW)
-                        al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_LINK);
-                    else
-                        al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_DEFAULT);
-                    al_show_mouse_cursor(oknoKomiwojazera);
-                    clearInside();
-                    drawPoints(listaPunktow);
-                    al_flip_display();
-                }
-            }
-        }
-        if(activeButton == 1) {
-        //jeżeli jest aktywny tryb modyfikacji punktów
-            polozenieMyszyWewnatrzPolaRysowania = wlasciwoscMyszy.y > WYSOKOSCPRZYCISKOW + WYSOKOSCPASKAKOLORU + ROZMIARPUNKTU && wlasciwoscMyszy.y < WYSOKOSCOKNA - PASEKSTANU - ROZMIARPUNKTU && wlasciwoscMyszy.x > ROZMIARPUNKTU && wlasciwoscMyszy.x < SZEROKOSCOKNA - ROZMIARPUNKTU;
-            if(polozenieMyszyWewnatrzPolaRysowania) {
-            //jeżeli znajduje sie w polu rysowania
-                if(modyfikacjaPunktu == false ) {
-                //jeżeli nie jest włączona edycja punktu
-                    elementListy = takePoint(listaPunktow, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
-                    if(elementListy) {
-                    //jeżeli zwróciło mi element na którym jest myszka
-                        al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_LINK);
-                    }
-                    else {
-                        al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_DEFAULT);
-                        tmpX = tmpY = 0;
-                    }
-                    if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN && elementListy) {
-                    //jeżeli zwróciło element i został on wciśnięty
-                        policzonaSciezka = false; //oznaczenie ze potrzeba policzyc sciezke od nowa
-                        unvisitAll(listaPunktow); //oznaczenie miast jako nieodwiedzonych
-                        deleteList(listaZachlanny); //oproznienie trasy
-
-
-                        al_show_mouse_cursor(oknoKomiwojazera);
-                        tmpX = elementListy->nastepny->wspX, tmpY = elementListy->nastepny->wspY;
-                        deletePoint(elementListy);
-
-                        clearInside();
-                        modyfikacjaPunktu = true;
-                        continue;
-                    }
-                    clearInside();
-                    drawPoints(listaPunktow);
-                    al_flip_display();
-                    al_show_mouse_cursor(oknoKomiwojazera);
-                } else {
-                //jezeli jestem w trakcie modyfikacji punktu
-                    if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
-                    //jezeli klikne aby nadac nowa pozycje punktowi
-                        addModifiedPoint(elementListy, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
-                        elementListy = NULL;
-                        modyfikacjaPunktu = false;
-                        continue;
-                    } else {
-                        al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_MOVE);
-                        clearInside();
-                        drawLines(listaPunktow);
-                        drawLinesToNewPoint(listaPunktow, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
-                        drawPointsWithoutLines(listaPunktow);
-                        al_draw_filled_circle(wlasciwoscMyszy.x, wlasciwoscMyszy.y, ROZMIARPUNKTU, KOLORPUNKTU);
-                        al_draw_circle(wlasciwoscMyszy.x, wlasciwoscMyszy.y, ROZMIARPUNKTU, KOLOROBRAMOWANIAPUNKTU, 1);
-                        al_flip_display();
-                    }
-                }
-            } else {
-            //jeżeli mysz nie znajduje się w polu wyznaczonym do rysowania
-                if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
-                //jeżeli nastąpi kliknięcie
-                    changeButton(wlasciwoscMyszy.x, wlasciwoscMyszy.y, &activeButton); //zmień przycisk myszy
-                    if(modyfikacjaPunktu) {
-
-                        addModifiedPoint(elementListy, tmpX, tmpY);
-                        tmpX = tmpY = 0;
-                        modyfikacjaPunktu = false;
-                    }
-                } else {
-                    if(wlasciwoscMyszy.y < WYSOKOSCPRZYCISKOW)
-                        al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_LINK);
-                    else
-                        al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_DEFAULT);
-                    al_show_mouse_cursor(oknoKomiwojazera);
-                    clearInside();
-                    drawPoints(listaPunktow);
-                    al_flip_display();
-                }
-            }
-        }
-        if(activeButton == 2) {
-        //jeżeli jest aktywny tryb usuwania punktow
-            polozenieMyszyWewnatrzPolaRysowania = wlasciwoscMyszy.y > WYSOKOSCPRZYCISKOW + WYSOKOSCPASKAKOLORU + ROZMIARPUNKTU && wlasciwoscMyszy.y < WYSOKOSCOKNA - PASEKSTANU - ROZMIARPUNKTU && wlasciwoscMyszy.x > ROZMIARPUNKTU && wlasciwoscMyszy.x < SZEROKOSCOKNA - ROZMIARPUNKTU;
-            elementListy = takePoint(listaPunktow, wlasciwoscMyszy.x, wlasciwoscMyszy.y);
-            if(polozenieMyszyWewnatrzPolaRysowania) {
-                if(elementListy)
-                    al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_LINK);
-                else
-                    al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_DEFAULT);
-                al_show_mouse_cursor(oknoKomiwojazera);
-                if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN && elementListy) {
-                    //jezeli usuwa przycisk
-                    policzonaSciezka = false; //oznaczenie ze potrzeba policzyc sciezke od nowa
-                    unvisitAll(listaPunktow); //oznaczenie miast jako nieodwiedzonych
-                    deleteList(listaZachlanny); //oproznienie trasy
-
-                    deletePoint(elementListy);
-                    clearInside();
-                    drawPoints(listaPunktow);
-                    al_flip_display();
-                    continue;
-                }
-            } else {
-            //jeżeli mysz nie znajduje się w polu wyznaczonym do rysowania
-                if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
-                //jeżeli nastąpi kliknięcie
-                    changeButton(wlasciwoscMyszy.x, wlasciwoscMyszy.y, &activeButton); //zmień przycisk myszy
-                    modyfikacjaPunktu = false;
-                } else {
-                    if(wlasciwoscMyszy.y < WYSOKOSCPRZYCISKOW)
-                        al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_LINK);
-                    else
-                        al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_DEFAULT);
-                    al_show_mouse_cursor(oknoKomiwojazera);
-                    clearInside();
-                    drawPoints(listaPunktow);
-                    al_flip_display();
-                }
-            }
-        }
-        if(activeButton == 3) {
-        //jeżeli jest aktywny tryb liczenia trasy
-            if(!busyMouse && !policzonaSciezka) {
-                al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_BUSY);
-                busyMouse = true;
-            }
-            if(wlasciwoscMyszy.y < WYSOKOSCPRZYCISKOW && wlasciwoscMyszy.x < SZEROKOSCOKNA * 3 / 4) {
-                al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_LINK);
-                busyMouse = false;
-            } else if(!busyMouse) {
-                al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_BUSY);
-                busyMouse = true;
-            }
-            if(get_event && ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN && wlasciwoscMyszy.y < WYSOKOSCPRZYCISKOW && wlasciwoscMyszy.x < SZEROKOSCOKNA * 3 / 4) {
-            //jeżeli został wciśnięty przycisk myszy
-                changeButton(wlasciwoscMyszy.x, wlasciwoscMyszy.y, &activeButton);
-                busyMouse = false;
-//tutaj usuwanie powinno sie odbyc lub wyczyszczenie policzonej listy
-            }
-            if( policzonaSciezka == true ) {
-            //jeżeli ścieżka była już policzona wyświetlą ją
-                showPointsPath(listaZachlanny, circleFont);
-                al_set_system_mouse_cursor(oknoKomiwojazera, ALLEGRO_SYSTEM_MOUSE_CURSOR_DEFAULT);
-                al_flip_display();
-            }
-            if( policzonaSciezka == false ) {
-            //policz ścieżkę
-                algorithmGreedy(listaPunktow, listaZachlanny);
-                dlugoscTrasy = countPath(listaZachlanny);
-                policzonaSciezka = true;
-            }
-
-
-        }
-        al_rest(0.0025);
-    }
-
-    deleteList(listaPunktow);
-    deleteList(listaZachlanny);
-
-    al_destroy_display(oknoKomiwojazera);
-    al_destroy_event_queue(kolejkaZdarzen);
-    return 0;
+void printHowLong(double trasa, ALLEGRO_FONT *circleFont) {
+    al_draw_filled_rectangle(0, WYSOKOSCOKNA-PASEKSTANU, SZEROKOSCOKNA, WYSOKOSCOKNA, CZARNY);
+    if(trasa)
+        al_draw_textf(circleFont, al_map_rgb(255, 255, 255), SZEROKOSCOKNA/2, WYSOKOSCOKNA-PASEKSTANU/2-al_get_font_line_height(circleFont)/2, ALLEGRO_ALIGN_CENTER, "Obliczona sciezka wynosi: %0.2lf", trasa);
 }
+
