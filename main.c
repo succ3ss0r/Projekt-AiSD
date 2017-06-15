@@ -1,3 +1,25 @@
+/****************************************************************************
+*                          Problem komiwojażera                             *
+*                      Paweł Siwoń, Jakub Serwicki                          *
+*           Wydział Elektrotechniki, Automatyki i Informatyki               *
+*                        Grupa dziekańska 1ID16A                            *
+*                                                                           *
+*            Wszelkie prawa do wykorzystania kodu zastrzeżone               *
+*                    Politechnika Świętokrzyska 2017                        *
+****************************************************************************/
+
+/**
+* \file main.c
+* \brief Problem komiwojażera
+*
+* Program pozwala na dodawanie punktów na ekranie,
+* ich wyswietlanie, modyfikację oraz usuwanie.
+* Z podanych punktów liczy trasę oraz jej długośc.
+*
+* \author Serwicki Jakub
+* \author Siwoń Paweł
+*/
+
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_font.h>
@@ -5,7 +27,6 @@
 #include <allegro5/mouse.h>
 #include <stdio.h>
 #include <math.h>
-
 #define MARGINES 0
 
 #define SZEROKOSCOKNA 640
@@ -31,39 +52,227 @@
 
 #define MAXELEMENTS 21
 
+
+//!Struktura opisująca miasto jako punkt
+/*!Służy do utworzenia listy miast, które dodawane są podczas dodawania punktów w głównym oknie okranu. Przechowują pola takie jak współrzedne (x, y) kliknięcia,
+//pole logiczne do oznaczania czy miasto było odwiedzone oraz wskaźnik na kolejny element listy.*/
 struct punkt {
-    //struktura potrzebna do stworzenia listy punktow która zostanie przerobiona na tablicę przejść lub listy przejść
+    //!Współrzędna x punktu
     int wspX;
+    //!Współrzędna y punktu
     int wspY;
-    int odwiedzony;
+    //!Pole logiczne do oznaczania odwiedzanych miast
+    bool odwiedzony;
+    //!Wskażnik na następną strukturę opisującą miasto
     struct punkt *nastepny;
 };
 
-struct punkt* znajdzMniejszeX(struct punkt*, int);
-int checkIfExist(int, int, struct punkt *);
-void clearInside(void);
-void drawLines(struct punkt *);
-void drawLinesToNewPoint(struct punkt *, int, int);
-void drawPoints(struct punkt *);
-void drawPointsWithoutLines(struct punkt *);
-int showPoints(struct punkt *);
-int countPoints(struct punkt *);
-void addPoint(struct punkt *, int, int);
-void addModifiedPoint(struct punkt *, int, int);
-void activateButton(int, int *);
-void drawButtons(int *, ALLEGRO_FONT *);
-void changeButton(int, int, int *);
-void drawStatusbar(void);
+/**
+ * \brief Aktywuje funkcje przypisane do przycisku.
+ *
+ * \param buttonNo numer przycisku do aktywacji
+ * \param activeButton wskaźnik na zmienną przechowującą numer aktywnego przycisku
+ *
+ * \return \c NULL
+ *
+ */
+void activateButton(int buttonNo, int *activeButton);
+
+/**
+ * \brief Dodaje punkt do listy punktów.
+ *
+ * \param listaPunktow wskaźnik na listę punktów
+ * \param x współrzędna x nowego punktu
+ * \param y współrzędna y nowego punktu
+ *
+ * \return \c NULL
+ */
+void addPoint(struct punkt *listaPunktow, int x, int y);
+
+/**
+ * \brief Dodaje ponownie punkt do listy w miejsce, z którego został usunięty
+ *
+ * \param listaPunktow wskaźnik na element listy po którym trzeba dodać punkt
+ * \param x współrzędna x zmodyfikowanego punktu
+ * \param y współrzędna y zmodyfikowanego punktu
+ *
+ * \return \c NULL
+ */
+void addModifiedPoint(struct punkt *listaPunktow, int x, int y);
+
+/**
+ * \brief Oblicza trasę zaczynając od pierwszego dodanego punktu
+ *
+ * \param listaPunktow wskaźnik na listę punktów, do której dodaje się punkty
+ * \param listaZachlanny wskaźnik na listę, która będzie zawierała trasę
+ *
+ * \return \c NULL
+ */
+void algorithmGreedy(struct punkt *listaPunktow, struct punkt *listaZachlanny);
+
+/**
+ * \brief Inicjuje wszystkie dodatki z pakietu allegro
+ *
+ *
+ * \return \c 0 jeśli się powiedzie inicjacja wszystkich dodatków, w przeciwnym wypadku -1
+ */
 int allegroInitializeAllAddons(void);
-struct punkt *takePoint(struct punkt *, int, int);
-void deletePoint(struct punkt *);
-double calculateDistance(struct punkt *, struct punkt *);
-void algorithmGreedy(struct punkt *, struct punkt *);
-void unvisitAll(struct punkt *);
-void deleteList(struct punkt *);
-void showPointsPath(struct punkt *, ALLEGRO_FONT *);
-double countPath(struct punkt *);
-void printHowLong(double, ALLEGRO_FONT *);
+
+/**
+ * \brief Liczy dystans pomiędzy dwoma miastami
+ *
+ * \param miasto1 wskaźnik na pierwsze miasto
+ * \param miasto2 wskaźnik na drugie miasto
+ *
+ * \return \c Odległość pomiędzy miastami
+ */
+double calculateDistance(struct punkt *miasto1, struct punkt *miasto2);
+/**
+ * \brief Liczy długość trasy
+ *
+ * \param listaPunktow wskaźnik na ułożoną przez algorytm zachłanny trasę
+ *
+ * \return \c Długość wyliczonej trasy
+ */
+double countPath(struct punkt *listaPunktow);
+/**
+ * \brief Zlicza ilość punktów w liście
+ *
+ * \param listaPunktów lista dodanych punktów
+ *
+ * \return \c Ilość punktów w liście
+ */
+int countPoints(struct punkt *listaPunktow);
+/**
+ * \brief Funkcja zmieniająca aktywny przycisk
+ *
+ * \param x współrzędna x myszy podczas kliknięcia
+ * \param y współrzedna y myszy podczas kliknięcia
+ * \param activeButton wskaźnik na aktualnie aktywny przycisk
+ *
+ * \return \c NULL
+ */
+void changeButton(int x, int y, int *activeButton);
+/**
+ * \brief Sprawdza czy punkt już istnieje w liście
+ *
+ * \param x współrzędna x myszy
+ * \param y współrzędna y myszy
+ * \param listaPunktow wskaźnik na początek listy punktów
+ *
+ * \return \c 1 gdy punkt istnieje w liście, 0 gdy nie istnieje
+ */
+int checkIfExist(int x, int y, struct punkt *listaPunktow);
+/**
+ * \brief Czyści wnętrze okna
+ *
+ * \return \c NULL
+ */
+void clearInside(void);
+
+
+/**
+ * \brief Usuwa całą listę punktów
+ *
+ * \param listaPunktow wskaźnik na listę do usunięcia
+ *
+ * \return NULL
+ */
+void deleteList(struct punkt *listaPunktow);
+/**
+ * \brief Usuwa punkt z listy
+ *
+ * \param prev wskaźnik na element poprzedzający docelowy element do usunięcia
+ *
+ * \return NULL
+ */
+void deletePoint(struct punkt *prev);
+/**
+ * \brief Rsuje przyciski nawigacyjne
+ *
+ * \param activeButton wskaźnik na zmienną przechowującą numer aktualnego przycisku
+ * \param font wskaźnik na czcionkę używaną do pisania na przyciskach
+ *
+ * \return NULL
+ */
+void drawButtons(int *activeButton, ALLEGRO_FONT *font);
+/**
+ * \brief Rysuje linie między  punktami
+ *
+ * \param listaPunktow wskaźnik na początek listy punktów
+ *
+ * \return NULL
+ */
+void drawLines(struct punkt *listaPunktow);
+/**
+ * \brief Rysuje linie do punktu, podczas jego dodawania
+ *
+ * \param listaPunktow wskaźnik na listę punktow
+ * \param x współrzedna x nowego punktu
+ * \param y współrzędna y nowego punktu
+ *
+ * \return NULL
+ */
+void drawLinesToNewPoint(struct punkt *listaPunktow, int x, int y);
+/**
+ * \brief Rysuje punkty oraz linie łączące kolejne punkty z listy
+ *
+ * \param listaPunktow wskaźnik na początek listy punktów
+ *
+ * \return NULL
+ */
+void drawPoints(struct punkt *listaPunktow);
+/**
+ * \brief Rysuje punkty bez linii
+ *
+ * \param listaPunktow wskaźnik na początek listy punktów
+ *
+ * \return NULL
+ */
+void drawPointsWithoutLines(struct punkt *listaPunktow);
+/**
+ * \brief Rysuje pasek stanu
+ *
+ * \return NULL
+ */
+void drawStatusbar(void);
+/**
+ * \brief Wypisuje w pasku stanu długość trasy
+ *
+ * \param trasa długość trasy
+ * \param circleFont czcionka używana do wypisania informacji
+ *
+ * \return NULL
+ */
+void printHowLong(double trasa, ALLEGRO_FONT *circleFont);
+
+/**
+ * \brief Pokazuje obliczoną trasę na mapie
+ *
+ * \param listaPunktow wskaźnik na listę trasy
+ * \param circleFont wskaźnik na czcionkę, której używa się do wypisywania kolejności punktów
+ *
+ * \return NULL
+ */
+void showPointsPath(struct punkt *listaPunktow, ALLEGRO_FONT *circleFont);
+/**
+ * \brief Służy do wybierania punktu po najechaniu myszą
+ *
+ * \param listaPunktow wskaźnik na listę punktów
+ * \param x współrzedna x myszy
+ * \param y współrzedna y myszy
+ *
+ * \return Wskaźnik na punkt, który wybrało się myszą
+ */
+struct punkt *takePoint(struct punkt *listaPunktow, int x, int y);
+/**
+ * \brief Oznacza wszystkie miasta w liście jako nieodwiedzone
+ *
+ * \param listaPunktow wskaźnik na listę punktów
+ *
+ * \return NULL
+ */
+void unvisitAll(struct punkt *listaPunktow);
 
 int main(int argc, char **argv) {
     if( allegroInitializeAllAddons() ) {
@@ -337,28 +546,6 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-
-struct punkt* znajdzMniejszeX(struct punkt *listaPunktow, int x) {
-    //funkcja zwraca adres elementu z mniejszą współrzędną x
-    if(!listaPunktow->nastepny || listaPunktow->nastepny->wspX >= x)
-        //jeżeli dodawany będzie pierwszy element lub X pierwszego elementu będzie więsze od dodawanego zwróć wskaźnik na listę
-        return listaPunktow;
-    struct punkt *poprzedni = listaPunktow->nastepny; //utwórz miejsce gdzie będzie przechowany poprzedni element listy
-    listaPunktow = listaPunktow->nastepny; //ustaw listę na pierwszy element (nie na wskażnik listy)
-    while(listaPunktow->wspX <= x) {
-        //dopóki wspX aktualnej listy jest większe bądź równe x oraz istnieją następne elementy w liście
-
-        poprzedni = listaPunktow; //przełącz wskażnik poprzedniego na aktualny element
-        if(listaPunktow->nastepny)
-            //sprawdza czy istnieje nastepny element w liście
-            listaPunktow = listaPunktow->nastepny; //przesuń wskażnik o jeden dalej
-        else
-            //jeżeli nie ma nastepnego elementu w liście wyjdż z while
-            break;
-    }
-    //zwróć adres element za który trzeba wstawić element
-    return poprzedni;
-}
 int checkIfExist(int x, int y, struct punkt *listaPunktow) {
     //sprawdza czy istnieje miasto o danych współrzędnych w liście
     while(listaPunktow->nastepny) {
@@ -414,29 +601,6 @@ void drawPointsWithoutLines(struct punkt *listaPunktow) {
         al_draw_circle(listaPunktow->wspX, listaPunktow->wspY, ROZMIARPUNKTU, KOLOROBRAMOWANIAPUNKTU, 1);
     }
 }
-int showPoints(struct punkt *listaPunktow) {
-    //wyświetlanie elementów listy, zwraca numer porządkowy ostatniego elementu
-
-    int number = 1; //numery porządkowe od 1
-
-    if(!listaPunktow->nastepny) {
-        //jeżeli lista jest pusta wyświetl ostrzeżenie
-        printf("\n\tBrak punktow! Najpierw dodaj ich kilka.");
-    } else {
-        //jeżeli lista zawiera elementy
-
-        while(listaPunktow->nastepny) {
-            //dopkóki element listy wskazuje na następny
-
-            listaPunktow = listaPunktow->nastepny; //pierwszy element jest pusty dlatego trzeba przepiąć go teraz
-            printf("\n\t%d. (%d, %d)", number, listaPunktow->wspX, listaPunktow->wspY);
-
-            ++number; //zwiększ numer porzadkowy
-        }
-    }
-
-    return number - 1; //zwroc numer porzadkowy ostatniego elementu
-}
 int countPoints(struct punkt *listaPunktow) {
     //wyświetlanie elementów listy zwraca numer ostatniego elementu
 
@@ -454,6 +618,9 @@ int countPoints(struct punkt *listaPunktow) {
     return number - 1; //zwroc numer porzadkowy ostatniego elementu
 }
 void addPoint(struct punkt *listaPunktow, int x, int y) {
+
+    if(checkIfExist(x, y, listaPunktow))
+        return;
     //dodaje na koniec listy
     while(listaPunktow->nastepny)
         listaPunktow = listaPunktow->nastepny;
