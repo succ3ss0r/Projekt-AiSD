@@ -8,18 +8,6 @@
 *                    Politechnika Świętokrzyska 2017                        *
 ****************************************************************************/
 
-/**
-* \file main.c
-* \brief Problem komiwojażera
-*
-* Program pozwala na dodawanie punktów na ekranie,
-* ich wyswietlanie, modyfikację oraz usuwanie.
-* Z podanych punktów liczy trasę oraz jej długośc.
-*
-* \author Serwicki Jakub
-* \author Siwoń Paweł
-*/
-
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_font.h>
@@ -52,10 +40,6 @@
 
 #define MAXELEMENTS 21
 
-
-//!Struktura opisująca miasto jako punkt
-/*!Służy do utworzenia listy miast, które dodawane są podczas dodawania punktów w głównym oknie okranu. Przechowują pola takie jak współrzedne (x, y) kliknięcia,
-//pole logiczne do oznaczania czy miasto było odwiedzone oraz wskaźnik na kolejny element listy.*/
 struct punkt {
     //!Współrzędna x punktu
     int wspX;
@@ -67,211 +51,28 @@ struct punkt {
     struct punkt *nastepny;
 };
 
-/**
- * \brief Aktywuje funkcje przypisane do przycisku.
- *
- * \param buttonNo numer przycisku do aktywacji
- * \param activeButton wskaźnik na zmienną przechowującą numer aktywnego przycisku
- *
- * \return \c NULL
- *
- */
 void activateButton(int buttonNo, int *activeButton);
-
-/**
- * \brief Dodaje punkt do listy punktów.
- *
- * \param listaPunktow wskaźnik na listę punktów
- * \param x współrzędna x nowego punktu
- * \param y współrzędna y nowego punktu
- *
- * \return \c NULL
- */
 void addPoint(struct punkt *listaPunktow, int x, int y);
-
-/**
- * \brief Dodaje ponownie punkt do listy w miejsce, z którego został usunięty
- *
- * \param listaPunktow wskaźnik na element listy po którym trzeba dodać punkt
- * \param x współrzędna x zmodyfikowanego punktu
- * \param y współrzędna y zmodyfikowanego punktu
- *
- * \return \c NULL
- */
 void addModifiedPoint(struct punkt *listaPunktow, int x, int y);
-
-/**
- * \brief Oblicza trasę zaczynając od pierwszego dodanego punktu
- *
- * \param listaPunktow wskaźnik na listę punktów, do której dodaje się punkty
- * \param listaZachlanny wskaźnik na listę, która będzie zawierała trasę
- *
- * \return \c NULL
- */
 void algorithmGreedy(struct punkt *listaPunktow, struct punkt *listaZachlanny);
-
-/**
- * \brief Inicjuje wszystkie dodatki z pakietu allegro
- *
- *
- * \return \c 0 jeśli się powiedzie inicjacja wszystkich dodatków, w przeciwnym wypadku -1
- */
 int allegroInitializeAllAddons(void);
-
-/**
- * \brief Liczy dystans pomiędzy dwoma miastami
- *
- * \param miasto1 wskaźnik na pierwsze miasto
- * \param miasto2 wskaźnik na drugie miasto
- *
- * \return \c Odległość pomiędzy miastami
- */
 double calculateDistance(struct punkt *miasto1, struct punkt *miasto2);
-/**
- * \brief Liczy długość trasy
- *
- * \param listaPunktow wskaźnik na ułożoną przez algorytm zachłanny trasę
- *
- * \return \c Długość wyliczonej trasy
- */
 double countPath(struct punkt *listaPunktow);
-/**
- * \brief Zlicza ilość punktów w liście
- *
- * \param listaPunktów lista dodanych punktów
- *
- * \return \c Ilość punktów w liście
- */
 int countPoints(struct punkt *listaPunktow);
-/**
- * \brief Funkcja zmieniająca aktywny przycisk
- *
- * \param x współrzędna x myszy podczas kliknięcia
- * \param y współrzedna y myszy podczas kliknięcia
- * \param activeButton wskaźnik na aktualnie aktywny przycisk
- *
- * \return \c NULL
- */
 void changeButton(int x, int y, int *activeButton);
-/**
- * \brief Sprawdza czy punkt już istnieje w liście
- *
- * \param x współrzędna x myszy
- * \param y współrzędna y myszy
- * \param listaPunktow wskaźnik na początek listy punktów
- *
- * \return \c 1 gdy punkt istnieje w liście, 0 gdy nie istnieje
- */
 int checkIfExist(int x, int y, struct punkt *listaPunktow);
-/**
- * \brief Czyści wnętrze okna
- *
- * \return \c NULL
- */
 void clearInside(void);
-
-
-/**
- * \brief Usuwa całą listę punktów
- *
- * \param listaPunktow wskaźnik na listę do usunięcia
- *
- * \return NULL
- */
 void deleteList(struct punkt *listaPunktow);
-/**
- * \brief Usuwa punkt z listy
- *
- * \param prev wskaźnik na element poprzedzający docelowy element do usunięcia
- *
- * \return NULL
- */
 void deletePoint(struct punkt *prev);
-/**
- * \brief Rsuje przyciski nawigacyjne
- *
- * \param activeButton wskaźnik na zmienną przechowującą numer aktualnego przycisku
- * \param font wskaźnik na czcionkę używaną do pisania na przyciskach
- *
- * \return NULL
- */
 void drawButtons(int *activeButton, ALLEGRO_FONT *font);
-/**
- * \brief Rysuje linie między  punktami
- *
- * \param listaPunktow wskaźnik na początek listy punktów
- *
- * \return NULL
- */
 void drawLines(struct punkt *listaPunktow);
-/**
- * \brief Rysuje linie do punktu, podczas jego dodawania
- *
- * \param listaPunktow wskaźnik na listę punktow
- * \param x współrzedna x nowego punktu
- * \param y współrzędna y nowego punktu
- *
- * \return NULL
- */
 void drawLinesToNewPoint(struct punkt *listaPunktow, int x, int y);
-/**
- * \brief Rysuje punkty oraz linie łączące kolejne punkty z listy
- *
- * \param listaPunktow wskaźnik na początek listy punktów
- *
- * \return NULL
- */
 void drawPoints(struct punkt *listaPunktow);
-/**
- * \brief Rysuje punkty bez linii
- *
- * \param listaPunktow wskaźnik na początek listy punktów
- *
- * \return NULL
- */
 void drawPointsWithoutLines(struct punkt *listaPunktow);
-/**
- * \brief Rysuje pasek stanu
- *
- * \return NULL
- */
 void drawStatusbar(void);
-/**
- * \brief Wypisuje w pasku stanu długość trasy
- *
- * \param trasa długość trasy
- * \param circleFont czcionka używana do wypisania informacji
- *
- * \return NULL
- */
 void printHowLong(double trasa, ALLEGRO_FONT *circleFont);
-
-/**
- * \brief Pokazuje obliczoną trasę na mapie
- *
- * \param listaPunktow wskaźnik na listę trasy
- * \param circleFont wskaźnik na czcionkę, której używa się do wypisywania kolejności punktów
- *
- * \return NULL
- */
 void showPointsPath(struct punkt *listaPunktow, ALLEGRO_FONT *circleFont);
-/**
- * \brief Służy do wybierania punktu po najechaniu myszą
- *
- * \param listaPunktow wskaźnik na listę punktów
- * \param x współrzedna x myszy
- * \param y współrzedna y myszy
- *
- * \return Wskaźnik na punkt, który wybrało się myszą
- */
 struct punkt *takePoint(struct punkt *listaPunktow, int x, int y);
-/**
- * \brief Oznacza wszystkie miasta w liście jako nieodwiedzone
- *
- * \param listaPunktow wskaźnik na listę punktów
- *
- * \return NULL
- */
 void unvisitAll(struct punkt *listaPunktow);
 
 int main(int argc, char **argv) {
