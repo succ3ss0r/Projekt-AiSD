@@ -41,13 +41,8 @@
 #define MAXELEMENTS 21
 
 struct punkt {
-    //!Współrzędna x punktu
-    int wspX;
-    //!Współrzędna y punktu
-    int wspY;
-    //!Pole logiczne do oznaczania odwiedzanych miast
+    int wspX, wspY;
     bool odwiedzony;
-    //!Wskażnik na następną strukturę opisującą miasto
     struct punkt *nastepny;
 };
 
